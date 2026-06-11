@@ -1,9 +1,38 @@
 import pandas as pd
 import json
+import zipfile
+import xml.etree.ElementTree as ET
+import re
+import os
 
 sheets = ['SECTOR 1', 'SECTOR 2', 'SECTOR 3', 'SECTOR 4', 'SECTOR 5', 'SECTOR 6']
 target_cuadrillas = ['CUADRILLA-03-L', 'CUADRILLA-04-L', 'CUADRILLA-01-C', 'CUADRILLA-02-C']
 url = 'https://docs.google.com/spreadsheets/d/1enauD12DiGlj5GM_P-_JF3HdpoZ-m92xzBRdjFEfuak/export?format=xlsx'
+
+kmz_path = 'POR CUADRILLAS, FECHAS- AD - INST - SECTORES - MP-CUSCO.kmz'
+kml_coords = {}
+if os.path.exists(kmz_path):
+    print('Parsing KMZ to extract coordinates...')
+    try:
+        with zipfile.ZipFile(kmz_path, 'r') as kmz:
+            kml = kmz.read('doc.kml')
+            root = ET.fromstring(kml)
+            ns = {'kml': 'http://www.opengis.net/kml/2.2'}
+            for pm in root.findall('.//kml:Placemark', ns):
+                name = pm.find('kml:name', ns)
+                coords = pm.find('.//kml:coordinates', ns)
+                if name is not None and coords is not None:
+                    nums = re.findall(r'\d{2}', name.text)
+                    if nums:
+                        c_text = coords.text.strip().split(',')
+                        if len(c_text) >= 2:
+                            kml_coords[nums[0]] = {
+                                'Longitud': c_text[0].strip(),
+                                'Latitud': c_text[1].strip()
+                            }
+        print(f'Extracted {len(kml_coords)} coordinates from KMZ.')
+    except Exception as e:
+        print('Error reading KMZ:', e)
 
 output_data = {c: {} for c in target_cuadrillas}
 
@@ -137,6 +166,12 @@ for sheet in sheets:
                 
                 new_mats.append({'Item': 'PILOTO LED VERDE Y ROJO (PAR)', 'Cantidad': '1'})
                 
+                if pk and pk != '0':
+                    nums = re.findall(r'\d{2}', str(pk))
+                    if nums and nums[0] in kml_coords:
+                        row['Latitud'] = kml_coords[nums[0]]['Latitud']
+                        row['Longitud'] = kml_coords[nums[0]]['Longitud']
+
                 row['MaterialesPunto'] = new_mats
                 cuad_t1.append(row)
                 

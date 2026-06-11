@@ -3,7 +3,7 @@ import {
   ChevronDown, MapPin, Package, CalendarDays, Camera, 
   Video, Volume2, ShieldAlert, Wifi, Link2, Layers, 
   HardHat, Box, Cable, Zap, Server, Filter, Activity,
-  Target, Menu, X
+  Target, Menu, X, Navigation
 } from 'lucide-react';
 import data from './data.json';
 
@@ -100,6 +100,20 @@ const LocationCard = ({ loc, filterFase }) => {
           <span>{loc['MEDIO DE COMUNICACION'] || 'N/A'}</span>
         </div>
       </div>
+
+      {loc.Latitud && loc.Longitud && (
+        <div style={{ padding: '0 1rem 1rem 1rem' }}>
+          <a 
+            href={`https://www.google.com/maps/dir/?api=1&destination=${loc.Latitud},${loc.Longitud}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="map-nav-btn"
+          >
+            <Navigation size={16} />
+            Cómo llegar
+          </a>
+        </div>
+      )}
 
       {visibleMaterials.length > 0 && (
         <div className="loc-materials-container">
