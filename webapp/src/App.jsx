@@ -3,7 +3,7 @@ import {
   ChevronDown, MapPin, Package, CalendarDays, Camera, 
   Video, Volume2, ShieldAlert, Wifi, Link2, Layers, 
   HardHat, Box, Cable, Zap, Server, Filter, Activity,
-  Target, Menu, X, Navigation
+  Target, Menu, X, Navigation, Sun, Moon
 } from 'lucide-react';
 import data from './data.json';
 
@@ -32,29 +32,7 @@ const getPuntoName = (loc) => {
   return `${loc['DESTINO ESP.']} - Frente ${loc['FRENTE']}`;
 };
 
-const isEquipmentMaterial = (itemName) => {
-  const n = itemName.toLowerCase();
-  if (n.includes('pararrayos')) return false;
-  
-  return (
-    n.includes('camara') ||
-    n.includes('ptz') ||
-    n.includes('multisensor') ||
-    n.includes('altavoz') ||
-    n.includes('altavoces') ||
-    n.includes('boton') ||
-    n.includes('intercom') ||
-    n.includes('h4') ||
-    n.includes('corrugado') ||
-    n.includes('ethernet') ||
-    n.includes('rj45') ||
-    n.includes('brazo') ||
-    n.includes('anclaje') ||
-    n.includes('abrazadera')
-  );
-};
-
-const LocationCard = ({ loc, filterFase }) => {
+const LocationCard = ({ loc, dayLabel }) => {
   const [showLogistica, setShowLogistica] = useState(false);
   
   const ptz = loc['CAMARA PTZ'];
@@ -63,11 +41,7 @@ const LocationCard = ({ loc, filterFase }) => {
   const boton = loc['BOTON DE PANICO'];
   const estado = loc['ESTADO OPERATIVO']?.toUpperCase();
 
-  const visibleMaterials = (loc.MaterialesPunto || []).filter(m => {
-    if (filterFase === 'GABINETES') return !isEquipmentMaterial(m.Item);
-    if (filterFase === 'EQUIPOS') return isEquipmentMaterial(m.Item);
-    return true; // 'ALL'
-  });
+  const visibleMaterials = loc.MaterialesPunto || [];
 
   return (
     <div className="location-card">
@@ -121,7 +95,7 @@ const LocationCard = ({ loc, filterFase }) => {
             className={`loc-materials-toggle ${showLogistica ? 'open' : ''}`} 
             onClick={() => setShowLogistica(!showLogistica)}
           >
-            <span><Package size={16} /> Logística del Punto {filterFase !== 'ALL' && `(${filterFase === 'GABINETES' ? 'Adecuación' : 'Equipos'})`}</span>
+            <span><Package size={16} /> Logística del Punto</span>
             <ChevronDown 
               size={18} 
               style={{ 
@@ -152,11 +126,7 @@ const LocationCard = ({ loc, filterFase }) => {
         <div className="dates-info">
           <div className="date-item">
             <CalendarDays size={12}/>
-            <span><strong>Gabinetes:</strong> {loc['FECHAS DE INSTALACION GABINETES (ADECUACION O INSTALACION NUEVA)']?.split(' ')[0] || '-'}</span>
-          </div>
-          <div className="date-item">
-            <CalendarDays size={12}/>
-            <span><strong>Equipos:</strong> {loc['FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO']?.split(' ')[0] || '-'}</span>
+            <span><strong>Día Programado:</strong> {dayLabel || '-'}</span>
           </div>
         </div>
         <div className={`status-indicator ${estado === 'ACTIVO' ? 'active' : 'inactive'}`}>
@@ -208,9 +178,16 @@ const App = () => {
   const [activeCuadrilla, setActiveCuadrilla] = useState('CUADRILLA-03-L');
   const [expandedSector, setExpandedSector] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   
   // Filters state
-  const [filterFase, setFilterFase] = useState('ALL');
   const [filterSector, setFilterSector] = useState('ALL');
   const [filterEquipo, setFilterEquipo] = useState('ALL');
   const [filterFecha, setFilterFecha] = useState('ALL');
@@ -219,6 +196,21 @@ const App = () => {
   const cuadrillas = Object.keys(data);
   const currentData = data[activeCuadrilla];
   const allSectors = Object.keys(currentData).sort();
+
+  // Compute global dates mapping to "Día 1, Día 2..."
+  const dateToDayIndex = useMemo(() => {
+    const dates = new Set();
+    Object.values(data).forEach(cuadrillaData => {
+      Object.values(cuadrillaData).forEach(sectorData => {
+        (sectorData.Instalaciones || []).forEach(loc => {
+          const d = loc['FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO']?.split(' ')[0];
+          if (d && d !== '-' && d !== '') dates.add(d);
+        });
+      });
+    });
+    const sortedDates = Array.from(dates).sort();
+    return Object.fromEntries(sortedDates.map((d, i) => [d, `Día ${i + 1}`]));
+  }, []);
 
   // Compute filtered data, KPI stats, and dynamic available options for faceted search
   const { 
@@ -254,19 +246,11 @@ const App = () => {
         const altavoz = loc['ALTAVOZ IP'] && loc['ALTAVOZ IP'] !== '0';
         const btn = loc['BOTON DE PANICO'] && loc['BOTON DE PANICO'] !== '0';
         const punto = getPuntoName(loc);
-        const dateGab = loc['FECHAS DE INSTALACION GABINETES (ADECUACION O INSTALACION NUEVA)']?.split(' ')[0];
-        const dateEq = loc['FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO']?.split(' ')[0];
+        const dateEqRaw = loc['FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO']?.split(' ')[0];
+        const dateEq = dateEqRaw && dateEqRaw !== '-' ? dateToDayIndex[dateEqRaw] : null;
 
-        let fechaPasses = false;
-        if (filterFase === 'ALL') {
-            fechaPasses = filterFecha === 'ALL' || dateGab === filterFecha || dateEq === filterFecha;
-        } else if (filterFase === 'GABINETES') {
-            const hasValidDate = dateGab && dateGab !== '-' && dateGab !== '';
-            fechaPasses = hasValidDate && (filterFecha === 'ALL' || dateGab === filterFecha);
-        } else if (filterFase === 'EQUIPOS') {
-            const hasValidDate = dateEq && dateEq !== '-' && dateEq !== '';
-            fechaPasses = hasValidDate && (filterFecha === 'ALL' || dateEq === filterFecha);
-        }
+        const hasValidDate = dateEq !== null && dateEq !== undefined;
+        const fechaPasses = hasValidDate && (filterFecha === 'ALL' || dateEq === filterFecha);
 
         const equipoPasses = filterEquipo === 'ALL' || 
           (filterEquipo === 'PTZ' && ptz) || 
@@ -284,8 +268,7 @@ const App = () => {
             if (altavoz) aEquipos.add('ALTAVOZ');
         }
         if (sectorPasses && equipoPasses && puntoPasses) {
-            if ((filterFase === 'ALL' || filterFase === 'GABINETES') && dateGab && dateGab !== '-' && dateGab !== '') aFechas.add(dateGab);
-            if ((filterFase === 'ALL' || filterFase === 'EQUIPOS') && dateEq && dateEq !== '-' && dateEq !== '') aFechas.add(dateEq);
+            if (dateEq) aFechas.add(dateEq);
         }
 
         if (!sectorPasses || !equipoPasses || !fechaPasses || !puntoPasses) return false;
@@ -318,9 +301,14 @@ const App = () => {
       availableSectors: Array.from(aSectors).sort(),
       availablePuntos: Array.from(aPuntos).sort(),
       availableEquipos: Array.from(aEquipos).sort(),
-      availableFechas: Array.from(aFechas).sort()
+      // Sort days by their numeric value instead of alphabetically
+      availableFechas: Array.from(aFechas).sort((a, b) => {
+        const numA = parseInt(a.replace('Día ', ''));
+        const numB = parseInt(b.replace('Día ', ''));
+        return numA - numB;
+      })
     };
-  }, [activeCuadrilla, filterFase, filterSector, filterEquipo, filterFecha, filterPunto, currentData, allSectors]);
+  }, [activeCuadrilla, filterSector, filterEquipo, filterFecha, filterPunto, currentData, allSectors, dateToDayIndex]);
 
   const displaySectors = Object.keys(filteredSectors).sort();
 
@@ -332,7 +320,6 @@ const App = () => {
 
   // Reset all filters when changing Cuadrilla
   useEffect(() => {
-    setFilterFase('ALL');
     setFilterSector('ALL');
     setFilterEquipo('ALL');
     setFilterFecha('ALL');
@@ -365,6 +352,31 @@ const App = () => {
         </div>
 
         <div className="sidebar-scroll">
+          <div className="sidebar-section" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 600 }}>Apariencia</span>
+              <button 
+                onClick={toggleTheme} 
+                style={{
+                  background: 'var(--overlay-w-05)',
+                  border: '1px solid var(--border-light)',
+                  color: 'var(--text-main)',
+                  padding: '0.5rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                  {theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
+                </span>
+              </button>
+            </div>
+          </div>
+
           <div className="sidebar-section">
             <h3 className="sidebar-title"><HardHat size={16} /> Cuadrilla Activa</h3>
             <div className="cuadrilla-nav">
@@ -384,14 +396,6 @@ const App = () => {
           <div className="sidebar-section">
             <h3 className="sidebar-title"><Filter size={16} /> Filtros de Búsqueda</h3>
             <div className="filter-controls-vertical">
-              <div className="filter-group phase-filter">
-                <label>Fase de Trabajo</label>
-                <select value={filterFase} onChange={(e) => { setFilterFase(e.target.value); setFilterFecha('ALL'); }}>
-                  <option value="ALL">Todo el Proyecto</option>
-                  <option value="GABINETES">Adecuación Gabinetes</option>
-                  <option value="EQUIPOS">Instalación Equipos</option>
-                </select>
-              </div>
               <div className="filter-group">
                 <label>Sector</label>
                 <select value={filterSector} onChange={(e) => setFilterSector(e.target.value)}>
@@ -416,14 +420,13 @@ const App = () => {
                 </select>
               </div>
               <div className="filter-group">
-                <label>Fecha de Instalación</label>
+                <label>Día de Instalación</label>
                 <select value={filterFecha} onChange={(e) => setFilterFecha(e.target.value)}>
-                  <option value="ALL">Cualquier Fecha</option>
+                  <option value="ALL">Cualquier Día</option>
                   {availableFechas.map(f => <option key={f} value={f}>{f}</option>)}
                 </select>
               </div>
               <button className="reset-btn-full" onClick={() => {
-                setFilterFase('ALL');
                 setFilterSector('ALL');
                 setFilterEquipo('ALL');
                 setFilterFecha('ALL');
@@ -444,6 +447,21 @@ const App = () => {
             <Activity size={20} color="var(--primary)" />
             <h2>Dashboard</h2>
           </div>
+          <button 
+            onClick={toggleTheme} 
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-main)',
+              padding: '0.25rem',
+              cursor: 'pointer',
+              display: 'flex',
+              marginLeft: 'auto',
+              marginRight: '1rem'
+            }}
+          >
+            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
           <div className="mobile-cuadrilla-badge">
             {activeCuadrilla.replace('CUADRILLA-', 'C-')}
           </div>
@@ -517,9 +535,11 @@ const App = () => {
                       <div className="section-block">
                         <h3 className="section-title"><MapPin size={18} /> Frentes Filtrados</h3>
                         <div className="locations-grid">
-                          {instalaciones.map((loc, idx) => (
-                            <LocationCard key={idx} loc={loc} filterFase={filterFase} />
-                          ))}
+                          {instalaciones.map((loc, idx) => {
+                            const dRaw = loc['FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO']?.split(' ')[0];
+                            const dayLabel = dRaw && dRaw !== '-' ? dateToDayIndex[dRaw] : null;
+                            return <LocationCard key={idx} loc={loc} dayLabel={dayLabel} />;
+                          })}
                         </div>
                       </div>
                     )}
@@ -532,7 +552,6 @@ const App = () => {
                 <Filter size={48} opacity={0.2} />
                 <p>No se encontraron resultados para los filtros seleccionados.</p>
                 <button className="reset-btn" onClick={() => {
-                  setFilterFase('ALL');
                   setFilterSector('ALL');
                   setFilterEquipo('ALL');
                   setFilterFecha('ALL');
