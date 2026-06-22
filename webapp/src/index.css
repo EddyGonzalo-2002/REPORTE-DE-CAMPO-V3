@@ -26,6 +26,9 @@
   --c-multi: #f59e0b;
   --c-altavoz: #0ea5e9;
   --c-boton: #ef4444;
+  
+  --error: #ef4444;
+  --success: #10b981;
 }
 
 [data-theme="light"] {
@@ -45,6 +48,9 @@
   --overlay-b-30: rgba(255, 255, 255, 0.8);
   --overlay-b-40: rgba(255, 255, 255, 0.9);
   --overlay-b-60: rgba(255, 255, 255, 0.95);
+  
+  --error: #dc2626;
+  --success: #059669;
 }
 
 * {
