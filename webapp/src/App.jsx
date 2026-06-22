@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { 
   ChevronDown, MapPin, Package, CalendarDays, Camera, 
   Video, Volume2, ShieldAlert, Wifi, Link2, Layers, 
@@ -152,7 +152,7 @@ const LocationCard = ({ loc, dayLabel, session, onToggleCompletado }) => {
     const tableColumn = ["Ítem", "Cantidad"];
     const tableRows = visibleMaterials.map(m => [m.Item, m.Cantidad]);
 
-    doc.autoTable({
+    autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
       startY: 35,
@@ -315,7 +315,7 @@ const SectorGlobalLogistics = ({ materiales, sectorName }) => {
     const tableColumn = ["Ítem", "Cantidad"];
     const tableRows = materiales.map(m => [m.Item, m.Cantidad]);
 
-    doc.autoTable({
+    autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
       startY: 30,
