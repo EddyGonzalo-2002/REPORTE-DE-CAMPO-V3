@@ -5,7 +5,7 @@ import {
   ChevronDown, MapPin, Package, CalendarDays, Camera, 
   Video, Volume2, ShieldAlert, Wifi, Link2, Layers, 
   HardHat, Box, Cable, Zap, Server, Filter, Activity,
-  Target, Menu, X, Navigation, Sun, Moon, CheckSquare, Square, LogOut, Download, Map, BarChart2, Award, Search
+  Target, Menu, X, Navigation, Sun, Moon, CheckSquare, Square, LogOut, Download, Map, BarChart2, Award, Search, AlertTriangle
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
@@ -115,7 +115,7 @@ const SplashScreen = ({ onLogin, onGuest, session }) => {
   );
 };
 
-const LocationCard = ({ loc, dayLabel, session, onToggleCompletado, cuadrillaGlobal }) => {
+const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaGlobal }) => {
   const [showLogistica, setShowLogistica] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   
@@ -127,10 +127,23 @@ const LocationCard = ({ loc, dayLabel, session, onToggleCompletado, cuadrillaGlo
 
   const visibleMaterials = loc.MaterialesPunto || [];
 
-  const handleToggle = async () => {
+  const handleToggleCompletado = async () => {
     if (!session) return;
     setIsUpdating(true);
-    await onToggleCompletado(loc.id, !loc.completado);
+    const isNowCompleted = !loc.completado;
+    const updateData = { completado: isNowCompleted };
+    if (isNowCompleted) updateData.observado = false; // Exclusión mutua
+    await onUpdatePunto(loc.id, updateData);
+    setIsUpdating(false);
+  };
+
+  const handleToggleObservado = async () => {
+    if (!session) return;
+    setIsUpdating(true);
+    const isNowObservado = !loc.observado;
+    const updateData = { observado: isNowObservado };
+    if (isNowObservado) updateData.completado = false; // Exclusión mutua
+    await onUpdatePunto(loc.id, updateData);
     setIsUpdating(false);
   };
 
@@ -170,8 +183,16 @@ const LocationCard = ({ loc, dayLabel, session, onToggleCompletado, cuadrillaGlo
   const waText = encodeURIComponent(`Hola, este es el punto *${getPuntoName(loc)}* (${loc['DESTINO ESP.']}).\n📍 Ubicación: ${mapLink}`);
   const waLink = `https://wa.me/?text=${waText}`;
 
+  let cardStatusClass = '';
+  if (loc.observado) cardStatusClass = 'observado';
+  else if (loc.completado) cardStatusClass = 'completed';
+
   return (
-    <div className={`location-card ${loc.completado ? 'completed' : ''}`} style={{ opacity: loc.completado ? 0.7 : 1 }}>
+    <div className={`location-card ${cardStatusClass}`} style={{ 
+      opacity: (loc.completado || loc.observado) ? 0.8 : 1,
+      borderColor: loc.observado ? 'rgba(239, 68, 68, 0.4)' : undefined,
+      boxShadow: loc.observado ? '0 4px 20px rgba(239, 68, 68, 0.1)' : undefined
+    }}>
       <div className="loc-card-header">
         <div className="loc-destino">
           <span className="destino-lbl">Punto: {getPuntoName(loc)}</span>
@@ -182,7 +203,9 @@ const LocationCard = ({ loc, dayLabel, session, onToggleCompletado, cuadrillaGlo
             </span>
           )}
         </div>
-        <div className="frente-badge">Frente {loc['FRENTE']}</div>
+        <div className="frente-badge" style={{ background: loc.observado ? 'var(--error)' : undefined }}>
+          {loc.observado ? 'OBSERVADO' : `Frente ${loc['FRENTE']}`}
+        </div>
       </div>
       
       <div className="equipos-container">
@@ -234,26 +257,43 @@ const LocationCard = ({ loc, dayLabel, session, onToggleCompletado, cuadrillaGlo
         )}
         
         {session && (
-          <button 
-            onClick={handleToggle}
-            disabled={isUpdating}
-            className="map-nav-btn"
-            style={{ 
-              background: loc.completado ? 'var(--c-ptz)' : 'var(--overlay-w-10)', 
-              cursor: 'pointer',
-              border: loc.completado ? 'none' : '1px solid var(--border-light)', 
-              color: loc.completado ? '#fff' : 'var(--text-main)'
-            }}
-          >
-            {loc.completado ? <CheckSquare size={16} /> : <Square size={16} />}
-            {isUpdating ? 'Guardando...' : loc.completado ? 'Completado (Desmarcar)' : 'Marcar Completado'}
-          </button>
+          <>
+            <button 
+              onClick={handleToggleCompletado}
+              disabled={isUpdating}
+              className="map-nav-btn"
+              style={{ 
+                background: loc.completado ? 'var(--c-ptz)' : 'var(--overlay-w-10)', 
+                cursor: 'pointer',
+                border: loc.completado ? 'none' : '1px solid var(--border-light)', 
+                color: loc.completado ? '#fff' : 'var(--text-main)'
+              }}
+            >
+              {loc.completado ? <CheckSquare size={16} /> : <Square size={16} />}
+              {isUpdating ? '...' : loc.completado ? 'Completado' : 'Marcar Completado'}
+            </button>
+
+            <button 
+              onClick={handleToggleObservado}
+              disabled={isUpdating}
+              className="map-nav-btn"
+              style={{ 
+                background: loc.observado ? 'var(--error)' : 'var(--overlay-w-10)', 
+                cursor: 'pointer',
+                border: loc.observado ? 'none' : '1px solid var(--border-light)', 
+                color: loc.observado ? '#fff' : 'var(--error)'
+              }}
+            >
+              <AlertTriangle size={16} />
+              {isUpdating ? '...' : loc.observado ? 'Observado (Desmarcar)' : 'Marcar Observado'}
+            </button>
+          </>
         )}
 
         <button 
           onClick={exportPointPDF}
           className="map-nav-btn"
-          style={{ background: 'linear-gradient(135deg, #ef4444, #b91c1c)', color: '#fff', border: 'none' }}
+          style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#fff', border: 'none' }}
         >
           <Download size={16} /> Exportar PDF
         </button>
@@ -351,7 +391,7 @@ const SectorGlobalLogistics = ({ materiales, sectorName }) => {
           <button 
             onClick={exportSectorPDF}
             className="map-nav-btn"
-            style={{ background: 'linear-gradient(135deg, #ef4444, #b91c1c)', color: '#fff', border: 'none', marginBottom: '1rem', width: 'fit-content' }}
+            style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#fff', border: 'none', marginBottom: '1rem', width: 'fit-content' }}
           >
             <Download size={16} /> Exportar PDF Global
           </button>
@@ -379,6 +419,7 @@ const AdminDashboard = ({ data }) => {
 
   const rankings = [];
   let totalCompletados = 0;
+  let totalObservados = 0;
   let totalAsignados = 0;
 
   let ptzCompletadas = 0;
@@ -397,6 +438,9 @@ const AdminDashboard = ({ data }) => {
            if (i['CAMARA PTZ'] && i['CAMARA PTZ'] !== '0') ptzCompletadas++;
            if (i['CAMARA MULTISENSOR'] && i['CAMARA MULTISENSOR'] !== '0') multiCompletadas++;
            if (i['ALTAVOZ IP'] && i['ALTAVOZ IP'] !== '0') altavocesCompletados++;
+         }
+         if (i.observado) {
+           totalObservados++;
          }
        });
     });
@@ -421,12 +465,19 @@ const AdminDashboard = ({ data }) => {
         <p style={{ color: 'var(--text-muted)' }}>Vista global de avances por cuadrilla y estado del proyecto.</p>
       </div>
 
-      <div className="kpi-grid admin-kpi-top" style={{ marginBottom: '1rem' }}>
+      <div className="kpi-grid admin-kpi-top" style={{ marginBottom: '1rem', gridTemplateColumns: 'repeat(3, 1fr)' }}>
         <div className="kpi-card" style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))', borderColor: 'rgba(59, 130, 246, 0.3)' }}>
           <div className="kpi-icon" style={{color: 'var(--primary)'}}><Award size={32}/></div>
           <div className="kpi-info">
             <span className="kpi-val" style={{ fontSize: '2rem' }}>{totalCompletados}</span>
             <span className="kpi-lbl">Puntos Completados Global</span>
+          </div>
+        </div>
+        <div className="kpi-card" style={{ background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(185, 28, 28, 0.1))', borderColor: 'rgba(239, 68, 68, 0.3)' }}>
+          <div className="kpi-icon" style={{color: 'var(--error)'}}><AlertTriangle size={32}/></div>
+          <div className="kpi-info">
+            <span className="kpi-val" style={{ fontSize: '2rem', color: 'var(--error)' }}>{totalObservados}</span>
+            <span className="kpi-lbl">Puntos Observados Global</span>
           </div>
         </div>
         <div className="kpi-card">
@@ -567,6 +618,7 @@ const App = () => {
           Longitud: p.longitud,
           'FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO': p.dia_programado,
           completado: p.completado,
+          observado: p.observado,
           MaterialesPunto: mats
         });
       });
@@ -580,8 +632,8 @@ const App = () => {
     setLoading(false);
   };
 
-  const handleToggleCompletado = async (id, nuevoEstado) => {
-    const { error } = await supabase.from('puntos_instalacion').update({ completado: nuevoEstado }).eq('id', id);
+  const handleUpdatePunto = async (id, updateData) => {
+    const { error } = await supabase.from('puntos_instalacion').update(updateData).eq('id', id);
     if (!error) {
       fetchData();
     } else {
@@ -667,8 +719,8 @@ const App = () => {
       const sectorPasses = filterSector === 'ALL' || filterSector === sector;
 
       const filteredInst = instalaciones.filter(loc => {
-        // FILTRO PRINCIPAL: Si es invitado y el punto está completado, ocultarlo.
-        if (isGuest && loc.completado) return false;
+        // FILTRO PRINCIPAL INVITADOS: Ocultar si está completado o si está observado
+        if (isGuest && (loc.completado || loc.observado)) return false;
 
         const ptz = loc['CAMARA PTZ'] && loc['CAMARA PTZ'] !== '0';
         const multi = loc['CAMARA MULTISENSOR'] && loc['CAMARA MULTISENSOR'] !== '0';
@@ -971,7 +1023,7 @@ const App = () => {
                         loc={loc} 
                         dayLabel={dayLabel} 
                         session={session} 
-                        onToggleCompletado={handleToggleCompletado} 
+                        onUpdatePunto={handleUpdatePunto} 
                         cuadrillaGlobal={loc.cuadrillaPertenece}
                       />
                     );
@@ -1055,7 +1107,7 @@ const App = () => {
                               {instalaciones.map((loc, idx) => {
                                 const dRaw = loc['FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO']?.split(' ')[0];
                                 const dayLabel = dRaw && dRaw !== '-' ? dateToDayIndex[dRaw] : null;
-                                return <LocationCard key={idx} loc={loc} dayLabel={dayLabel} session={session} onToggleCompletado={handleToggleCompletado} />;
+                                return <LocationCard key={idx} loc={loc} dayLabel={dayLabel} session={session} onUpdatePunto={handleUpdatePunto} />;
                               })}
                             </div>
                           </div>
