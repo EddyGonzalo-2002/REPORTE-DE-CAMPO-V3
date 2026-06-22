@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { 
   ChevronDown, MapPin, Package, CalendarDays, Camera, 
   Video, Volume2, ShieldAlert, Wifi, Link2, Layers, 
   HardHat, Box, Cable, Zap, Server, Filter, Activity,
-  Target, Menu, X, Navigation, Sun, Moon, CheckSquare, Square, LogIn, LogOut
+  Target, Menu, X, Navigation, Sun, Moon, CheckSquare, Square, LogIn, LogOut, ArrowLeft, Download
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
@@ -32,6 +33,87 @@ const getPuntoName = (loc) => {
   return `${loc['DESTINO ESP.']} - Frente ${loc['FRENTE']}`;
 };
 
+const SplashScreen = ({ onLogin, onGuest, session }) => {
+  const [view, setView] = useState('main'); // main, login
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (error) {
+      alert(error.message);
+    } else {
+      onLogin();
+    }
+  };
+
+  return (
+    <div className="splash-overlay">
+      <div className="splash-container">
+        <div className="splash-logo">
+          <div className="splash-logo-circle">
+            <Activity size={40} color="white" />
+          </div>
+        </div>
+        
+        {view === 'main' && (
+          <>
+            <div>
+              <h1 className="splash-title">Cusco Seguro</h1>
+              <p className="splash-subtitle">Plataforma Operativa de Logística y Cuadrillas</p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+              <button className="splash-btn primary" onClick={() => setView('login')}>
+                <ShieldAlert size={18} /> Entrar como Administrador
+              </button>
+              <button className="splash-btn secondary" onClick={onGuest}>
+                Continuar como Invitado
+              </button>
+            </div>
+          </>
+        )}
+
+        {view === 'login' && (
+          <>
+            <div>
+              <h1 className="splash-title">Acceso Restringido</h1>
+              <p className="splash-subtitle">Inicia sesión para gestionar puntos</p>
+            </div>
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+              <input 
+                type="email" 
+                placeholder="Correo electrónico" 
+                className="splash-input"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+              />
+              <input 
+                type="password" 
+                placeholder="Contraseña" 
+                className="splash-input"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+              />
+              <button type="submit" className="splash-btn primary" disabled={loading}>
+                {loading ? 'Verificando...' : 'Ingresar al Dashboard'}
+              </button>
+            </form>
+            <button className="splash-back" onClick={() => setView('main')}>
+              <ArrowLeft size={16} /> Volver
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const LocationCard = ({ loc, dayLabel, session, onToggleCompletado }) => {
   const [showLogistica, setShowLogistica] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -41,7 +123,6 @@ const LocationCard = ({ loc, dayLabel, session, onToggleCompletado }) => {
   const altavoz = loc['ALTAVOZ IP'];
   const boton = loc['BOTON DE PANICO'];
   const estado = loc['ESTADO OPERATIVO']?.toUpperCase();
-  const isAdmin = session?.user?.role === 'authenticated'; // Or check a specific email/role
 
   const visibleMaterials = loc.MaterialesPunto || [];
 
@@ -50,6 +131,22 @@ const LocationCard = ({ loc, dayLabel, session, onToggleCompletado }) => {
     setIsUpdating(true);
     await onToggleCompletado(loc.id, !loc.completado);
     setIsUpdating(false);
+  };
+
+  const exportPointLogistics = () => {
+    if (!visibleMaterials || visibleMaterials.length === 0) {
+      alert("No hay materiales en este punto para exportar.");
+      return;
+    }
+    const dataToExport = visibleMaterials.map(m => ({
+      Ítem: m.Item,
+      Cantidad: m.Cantidad
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Logística Punto");
+    XLSX.writeFile(workbook, `Logistica_${getPuntoName(loc)}.xlsx`);
   };
 
   const mapLink = loc.Latitud && loc.Longitud ? `https://maps.google.com/maps?q=${loc.Latitud},${loc.Longitud}` : '';
@@ -109,11 +206,20 @@ const LocationCard = ({ loc, dayLabel, session, onToggleCompletado }) => {
           style={{ 
             background: loc.completado ? 'var(--c-ptz)' : 'var(--overlay-w-10)', 
             cursor: session ? 'pointer' : 'not-allowed',
-            opacity: session ? 1 : 0.5
+            opacity: session ? 1 : 0.5,
+            border: 'none', color: '#fff'
           }}
         >
           {loc.completado ? <CheckSquare size={16} /> : <Square size={16} />}
           {isUpdating ? 'Guardando...' : loc.completado ? 'Completado' : 'Marcar Completado'}
+        </button>
+
+        <button 
+          onClick={exportPointLogistics}
+          className="map-nav-btn"
+          style={{ background: 'var(--primary)', color: '#fff', border: 'none' }}
+        >
+          <Download size={16} /> Exportar Excel
         </button>
       </div>
 
@@ -165,10 +271,21 @@ const LocationCard = ({ loc, dayLabel, session, onToggleCompletado }) => {
   );
 };
 
-const SectorGlobalLogistics = ({ materiales }) => {
+const SectorGlobalLogistics = ({ materiales, sectorName }) => {
   const [expanded, setExpanded] = useState(false);
   
   if (!materiales || materiales.length === 0) return null;
+
+  const exportSectorLogistics = () => {
+    const dataToExport = materiales.map(m => ({
+      Ítem: m.Item,
+      Cantidad: m.Cantidad
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Logística Global");
+    XLSX.writeFile(workbook, `Logistica_Global_${sectorName}.xlsx`);
+  };
 
   return (
     <div className="section-block loc-materials-container" style={{ marginTop: 0, marginBottom: '1.5rem', background: 'rgba(255, 255, 255, 0.02)' }}>
@@ -183,6 +300,13 @@ const SectorGlobalLogistics = ({ materiales }) => {
       
       {expanded && (
         <div style={{ padding: '1rem' }}>
+          <button 
+            onClick={exportSectorLogistics}
+            className="map-nav-btn"
+            style={{ background: 'var(--secondary)', color: '#fff', border: 'none', marginBottom: '1rem', width: 'fit-content' }}
+          >
+            <Download size={16} /> Exportar Excel Global
+          </button>
           <div className="materials-grid" style={{ marginBottom: 0 }}>
             {materiales.map((mat, idx) => (
               <div key={idx} className="material-card">
@@ -206,21 +330,17 @@ const App = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
+  const [hasEntered, setHasEntered] = useState(false);
 
   const [activeCuadrilla, setActiveCuadrilla] = useState('');
   const [expandedSector, setExpandedSector] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
 
-  // Filters state
   const [filterSector, setFilterSector] = useState('ALL');
   const [filterEquipo, setFilterEquipo] = useState('ALL');
   const [filterFecha, setFilterFecha] = useState('ALL');
   const [filterPunto, setFilterPunto] = useState('ALL');
-
-  // Login Form State
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -232,12 +352,14 @@ const App = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session) setHasEntered(true);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session) setHasEntered(true);
     });
 
     fetchData();
@@ -294,21 +416,15 @@ const App = () => {
   const handleToggleCompletado = async (id, nuevoEstado) => {
     const { error } = await supabase.from('puntos_instalacion').update({ completado: nuevoEstado }).eq('id', id);
     if (!error) {
-      fetchData(); // Recargar datos para actualizar la UI, o modificar estado local
+      fetchData();
     } else {
       alert("Error al actualizar: " + error.message);
     }
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert(error.message);
-    else { setEmail(''); setPassword(''); }
-  };
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    setHasEntered(false);
   };
 
   const currentData = data && activeCuadrilla ? data[activeCuadrilla] : {};
@@ -451,249 +567,258 @@ const App = () => {
   }
 
   return (
-    <div className="app-layout">
-      {isSidebarOpen && <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
+    <>
+      {!hasEntered && (
+        <SplashScreen 
+          onLogin={() => setHasEntered(true)} 
+          onGuest={() => setHasEntered(true)} 
+          session={session} 
+        />
+      )}
 
-      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-header">
-          <div className="header-brand">
-            <Activity size={28} color="var(--primary)" />
-            <div>
-              <h2>Dashboard</h2>
-              <p className="subtitle">Operativo</p>
-            </div>
-          </div>
-          <button className="close-sidebar-btn" onClick={() => setIsSidebarOpen(false)}>
-            <X size={24} />
-          </button>
-        </div>
+      <div className="app-layout">
+        {isSidebarOpen && <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
 
-        <div className="sidebar-scroll">
-          <div className="sidebar-section" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 600 }}>Apariencia</span>
-              <button 
-                onClick={toggleTheme} 
-                style={{
-                  background: 'var(--overlay-w-05)',
-                  border: '1px solid var(--border-light)',
-                  color: 'var(--text-main)',
-                  padding: '0.5rem',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}
-              >
-                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>
-                  {theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
-                </span>
-              </button>
-            </div>
-          </div>
-
-          {/* LOGIN SECTION */}
-          <div className="sidebar-section" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
-            <h3 className="sidebar-title"><LogIn size={16} /> Acceso Administrador</h3>
-            {session ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--success)' }}>Sesión iniciada: {session.user.email}</span>
-                <button onClick={handleLogout} className="reset-btn-full" style={{ background: 'var(--error)' }}>Cerrar Sesión</button>
+        <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
+          <div className="sidebar-header">
+            <div className="header-brand">
+              <Activity size={28} color="var(--primary)" />
+              <div>
+                <h2>Dashboard</h2>
+                <p className="subtitle">Operativo</p>
               </div>
-            ) : (
-              <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-main)' }} required />
-                <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-main)' }} required />
-                <button type="submit" className="reset-btn-full" style={{ background: 'var(--primary)' }}>Ingresar</button>
-              </form>
-            )}
+            </div>
+            <button className="close-sidebar-btn" onClick={() => setIsSidebarOpen(false)}>
+              <X size={24} />
+            </button>
           </div>
 
-          <div className="sidebar-section">
-            <h3 className="sidebar-title"><HardHat size={16} /> Cuadrilla Activa</h3>
-            <div className="cuadrilla-nav">
-              {cuadrillas.map(c => (
+          <div className="sidebar-scroll">
+            <div className="sidebar-section" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 600 }}>Apariencia</span>
                 <button 
-                  key={c}
-                  className={`cuadrilla-nav-btn ${activeCuadrilla === c ? 'active' : ''}`}
-                  onClick={() => { setActiveCuadrilla(c); setIsSidebarOpen(false); }}
+                  onClick={toggleTheme} 
+                  style={{
+                    background: 'var(--overlay-w-05)',
+                    border: '1px solid var(--border-light)',
+                    color: 'var(--text-main)',
+                    padding: '0.5rem',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
                 >
-                  <span className="c-name">{c.replace('CUADRILLA-', 'C-')}</span>
-                  {activeCuadrilla === c && <div className="active-dot"></div>}
+                  {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                    {theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
+                  </span>
                 </button>
-              ))}
+              </div>
             </div>
-          </div>
 
-          <div className="sidebar-section">
-            <h3 className="sidebar-title"><Filter size={16} /> Filtros de Búsqueda</h3>
-            <div className="filter-controls-vertical">
-              <div className="filter-group">
-                <label>Sector</label>
-                <select value={filterSector} onChange={(e) => setFilterSector(e.target.value)}>
-                  <option value="ALL">Todos los Sectores</option>
-                  {availableSectors.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+            <div className="sidebar-section">
+              <h3 className="sidebar-title"><HardHat size={16} /> Cuadrilla Activa</h3>
+              <div className="cuadrilla-nav">
+                {cuadrillas.map(c => (
+                  <button 
+                    key={c}
+                    className={`cuadrilla-nav-btn ${activeCuadrilla === c ? 'active' : ''}`}
+                    onClick={() => { setActiveCuadrilla(c); setIsSidebarOpen(false); }}
+                  >
+                    <span className="c-name">{c.replace('CUADRILLA-', 'C-')}</span>
+                    {activeCuadrilla === c && <div className="active-dot"></div>}
+                  </button>
+                ))}
               </div>
-              <div className="filter-group">
-                <label>Punto Específico</label>
-                <select value={filterPunto} onChange={(e) => setFilterPunto(e.target.value)}>
-                  <option value="ALL">Todos los Puntos</option>
-                  {availablePuntos.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </div>
-              <div className="filter-group">
-                <label>Equipo Principal</label>
-                <select value={filterEquipo} onChange={(e) => setFilterEquipo(e.target.value)}>
-                  <option value="ALL">Cualquier Equipo</option>
-                  {availableEquipos.includes('PTZ') && <option value="PTZ">Cámara PTZ</option>}
-                  {availableEquipos.includes('MULTI') && <option value="MULTI">Cámara Multisensor</option>}
-                  {availableEquipos.includes('ALTAVOZ') && <option value="ALTAVOZ">Altavoz IP</option>}
-                </select>
-              </div>
-              <div className="filter-group">
-                <label>Día de Instalación</label>
-                <select value={filterFecha} onChange={(e) => setFilterFecha(e.target.value)}>
-                  <option value="ALL">Cualquier Día</option>
-                  {availableFechas.map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
-              <button className="reset-btn-full" onClick={() => {
-                setFilterSector('ALL');
-                setFilterEquipo('ALL');
-                setFilterFecha('ALL');
-                setFilterPunto('ALL');
-              }}>Limpiar Filtros</button>
             </div>
-          </div>
-        </div>
-      </aside>
 
-      <main className="main-content">
-        <header className="mobile-header">
-          <button className="menu-btn" onClick={() => setIsSidebarOpen(true)}>
-            <Menu size={24} />
-          </button>
-          <div className="mobile-header-title">
-            <Activity size={20} color="var(--primary)" />
-            <h2>Dashboard</h2>
-          </div>
-          <button 
-            onClick={toggleTheme} 
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-main)',
-              padding: '0.25rem',
-              cursor: 'pointer',
-              display: 'flex',
-              marginLeft: 'auto',
-              marginRight: '1rem'
-            }}
-          >
-            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
-          <div className="mobile-cuadrilla-badge">
-            {activeCuadrilla.replace('CUADRILLA-', 'C-')}
-          </div>
-        </header>
-
-        <div className="main-scroll-area">
-          <div className="kpi-grid">
-            <div className="kpi-card">
-              <div className="kpi-icon" style={{color: 'var(--primary)'}}><MapPin size={24}/></div>
-              <div className="kpi-info">
-                <span className="kpi-val">{stats.statLocs}</span>
-                <span className="kpi-lbl">Ubicaciones</span>
-              </div>
-            </div>
-            <div className="kpi-card">
-              <div className="kpi-icon" style={{color: 'var(--c-ptz)'}}><Camera size={24}/></div>
-              <div className="kpi-info">
-                <span className="kpi-val">{stats.statPtz}</span>
-                <span className="kpi-lbl">Total PTZ</span>
-              </div>
-            </div>
-            <div className="kpi-card">
-              <div className="kpi-icon" style={{color: 'var(--c-multi)'}}><Video size={24}/></div>
-              <div className="kpi-info">
-                <span className="kpi-val">{stats.statMulti}</span>
-                <span className="kpi-lbl">Multisensor</span>
-              </div>
-            </div>
-            <div className="kpi-card">
-              <div className="kpi-icon" style={{color: 'var(--c-altavoz)'}}><Volume2 size={24}/></div>
-              <div className="kpi-info">
-                <span className="kpi-val">{stats.statAltavoz}</span>
-                <span className="kpi-lbl">Altavoces</span>
-              </div>
-            </div>
-            <div className="kpi-card">
-              <div className="kpi-icon" style={{color: 'var(--c-boton)'}}><ShieldAlert size={24}/></div>
-              <div className="kpi-info">
-                <span className="kpi-val">{stats.statBoton}</span>
-                <span className="kpi-lbl">Botones</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="sectors-container">
-            {displaySectors.map(sector => {
-              const sectorData = filteredSectors[sector];
-              const instalaciones = sectorData.Instalaciones || [];
-              const materiales = sectorData.Materiales || [];
-              const isExpanded = expandedSector === sector;
-              
-              return (
-                <div key={sector} className={`sector-accordion ${isExpanded ? 'expanded' : ''}`}>
-                  <div className="sector-header" onClick={() => toggleSector(sector)}>
-                    <div className="sector-title">
-                      <Target className="sector-icon" size={20} />
-                      <h2>{sector}</h2>
-                      {instalaciones.length > 0 && <span className="count-badge">{instalaciones.length} Loc.</span>}
-                    </div>
-                    <div className="chevron-icon">
-                      <ChevronDown size={24} />
-                    </div>
-                  </div>
-                  
-                  <div className="sector-body">
-                    <SectorGlobalLogistics materiales={materiales} />
-
-                    {instalaciones.length > 0 && (
-                      <div className="section-block">
-                        <h3 className="section-title"><MapPin size={18} /> Frentes Filtrados</h3>
-                        <div className="locations-grid">
-                          {instalaciones.map((loc, idx) => {
-                            const dRaw = loc['FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO']?.split(' ')[0];
-                            const dayLabel = dRaw && dRaw !== '-' ? dateToDayIndex[dRaw] : null;
-                            return <LocationCard key={idx} loc={loc} dayLabel={dayLabel} session={session} onToggleCompletado={handleToggleCompletado} />;
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+            <div className="sidebar-section">
+              <h3 className="sidebar-title"><Filter size={16} /> Filtros de Búsqueda</h3>
+              <div className="filter-controls-vertical">
+                <div className="filter-group">
+                  <label>Sector</label>
+                  <select value={filterSector} onChange={(e) => setFilterSector(e.target.value)}>
+                    <option value="ALL">Todos los Sectores</option>
+                    {availableSectors.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
                 </div>
-              );
-            })}
-            {displaySectors.length === 0 && (
-              <div className="empty-state">
-                <Filter size={48} opacity={0.2} />
-                <p>No se encontraron resultados para los filtros seleccionados.</p>
-                <button className="reset-btn" onClick={() => {
+                <div className="filter-group">
+                  <label>Punto Específico</label>
+                  <select value={filterPunto} onChange={(e) => setFilterPunto(e.target.value)}>
+                    <option value="ALL">Todos los Puntos</option>
+                    {availablePuntos.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div className="filter-group">
+                  <label>Equipo Principal</label>
+                  <select value={filterEquipo} onChange={(e) => setFilterEquipo(e.target.value)}>
+                    <option value="ALL">Cualquier Equipo</option>
+                    {availableEquipos.includes('PTZ') && <option value="PTZ">Cámara PTZ</option>}
+                    {availableEquipos.includes('MULTI') && <option value="MULTI">Cámara Multisensor</option>}
+                    {availableEquipos.includes('ALTAVOZ') && <option value="ALTAVOZ">Altavoz IP</option>}
+                  </select>
+                </div>
+                <div className="filter-group">
+                  <label>Día de Instalación</label>
+                  <select value={filterFecha} onChange={(e) => setFilterFecha(e.target.value)}>
+                    <option value="ALL">Cualquier Día</option>
+                    {availableFechas.map(f => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                </div>
+                <button className="reset-btn-full" onClick={() => {
                   setFilterSector('ALL');
                   setFilterEquipo('ALL');
                   setFilterFecha('ALL');
                   setFilterPunto('ALL');
                 }}>Limpiar Filtros</button>
               </div>
+            </div>
+            
+            {session && (
+              <div className="sidebar-section" style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem', marginTop: 'auto' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--success)' }}>Sesión: {session.user.email}</span>
+                  <button onClick={handleLogout} className="reset-btn-full" style={{ background: 'var(--error)', borderColor: 'var(--error)' }}>
+                    <LogOut size={16} /> Cerrar Sesión
+                  </button>
+                </div>
+              </div>
             )}
           </div>
-        </div>
-      </main>
-    </div>
+        </aside>
+
+        <main className="main-content">
+          <header className="mobile-header">
+            <button className="menu-btn" onClick={() => setIsSidebarOpen(true)}>
+              <Menu size={24} />
+            </button>
+            <div className="mobile-header-title">
+              <Activity size={20} color="var(--primary)" />
+              <h2>Dashboard</h2>
+            </div>
+            {session && (
+              <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: 'var(--error)', padding: '0.5rem' }}>
+                <LogOut size={20} />
+              </button>
+            )}
+            <button 
+              onClick={toggleTheme} 
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-main)',
+                padding: '0.25rem',
+                cursor: 'pointer',
+                display: 'flex',
+                marginLeft: 'auto',
+                marginRight: '1rem'
+              }}
+            >
+              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            <div className="mobile-cuadrilla-badge">
+              {activeCuadrilla.replace('CUADRILLA-', 'C-')}
+            </div>
+          </header>
+
+          <div className="main-scroll-area">
+            <div className="kpi-grid">
+              <div className="kpi-card">
+                <div className="kpi-icon" style={{color: 'var(--primary)'}}><MapPin size={24}/></div>
+                <div className="kpi-info">
+                  <span className="kpi-val">{stats.statLocs}</span>
+                  <span className="kpi-lbl">Ubicaciones</span>
+                </div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-icon" style={{color: 'var(--c-ptz)'}}><Camera size={24}/></div>
+                <div className="kpi-info">
+                  <span className="kpi-val">{stats.statPtz}</span>
+                  <span className="kpi-lbl">Total PTZ</span>
+                </div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-icon" style={{color: 'var(--c-multi)'}}><Video size={24}/></div>
+                <div className="kpi-info">
+                  <span className="kpi-val">{stats.statMulti}</span>
+                  <span className="kpi-lbl">Multisensor</span>
+                </div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-icon" style={{color: 'var(--c-altavoz)'}}><Volume2 size={24}/></div>
+                <div className="kpi-info">
+                  <span className="kpi-val">{stats.statAltavoz}</span>
+                  <span className="kpi-lbl">Altavoces</span>
+                </div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-icon" style={{color: 'var(--c-boton)'}}><ShieldAlert size={24}/></div>
+                <div className="kpi-info">
+                  <span className="kpi-val">{stats.statBoton}</span>
+                  <span className="kpi-lbl">Botones</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="sectors-container">
+              {displaySectors.map(sector => {
+                const sectorData = filteredSectors[sector];
+                const instalaciones = sectorData.Instalaciones || [];
+                const materiales = sectorData.Materiales || [];
+                const isExpanded = expandedSector === sector;
+                
+                return (
+                  <div key={sector} className={`sector-accordion ${isExpanded ? 'expanded' : ''}`}>
+                    <div className="sector-header" onClick={() => toggleSector(sector)}>
+                      <div className="sector-title">
+                        <Target className="sector-icon" size={20} />
+                        <h2>{sector}</h2>
+                        {instalaciones.length > 0 && <span className="count-badge">{instalaciones.length} Loc.</span>}
+                      </div>
+                      <div className="chevron-icon">
+                        <ChevronDown size={24} />
+                      </div>
+                    </div>
+                    
+                    <div className="sector-body">
+                      <SectorGlobalLogistics materiales={materiales} sectorName={sector} />
+
+                      {instalaciones.length > 0 && (
+                        <div className="section-block">
+                          <h3 className="section-title"><MapPin size={18} /> Frentes Filtrados</h3>
+                          <div className="locations-grid">
+                            {instalaciones.map((loc, idx) => {
+                              const dRaw = loc['FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO']?.split(' ')[0];
+                              const dayLabel = dRaw && dRaw !== '-' ? dateToDayIndex[dRaw] : null;
+                              return <LocationCard key={idx} loc={loc} dayLabel={dayLabel} session={session} onToggleCompletado={handleToggleCompletado} />;
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {displaySectors.length === 0 && (
+                <div className="empty-state">
+                  <Filter size={48} opacity={0.2} />
+                  <p>No se encontraron resultados para los filtros seleccionados.</p>
+                  <button className="reset-btn" onClick={() => {
+                    setFilterSector('ALL');
+                    setFilterEquipo('ALL');
+                    setFilterFecha('ALL');
+                    setFilterPunto('ALL');
+                  }}>Limpiar Filtros</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+      </div>
+    </>
   );
 };
 
