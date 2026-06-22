@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { 
   ChevronDown, MapPin, Package, CalendarDays, Camera, 
   Video, Volume2, ShieldAlert, Wifi, Link2, Layers, 
   HardHat, Box, Cable, Zap, Server, Filter, Activity,
-  Target, Menu, X, Navigation, Sun, Moon, CheckSquare, Square, LogIn, LogOut, ArrowLeft, Download
+  Target, Menu, X, Navigation, Sun, Moon, CheckSquare, Square, LogOut, Download, Map, BarChart2, Award
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
@@ -68,7 +69,7 @@ const SplashScreen = ({ onLogin, onGuest, session }) => {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
               <button className="splash-btn primary" onClick={() => setView('login')}>
-                <ShieldAlert size={18} /> Entrar como Administrador
+                <ShieldAlert size={18} /> Entrar como Supervisor (Admin)
               </button>
               <button className="splash-btn secondary" onClick={onGuest}>
                 Continuar como Invitado
@@ -81,7 +82,7 @@ const SplashScreen = ({ onLogin, onGuest, session }) => {
           <>
             <div>
               <h1 className="splash-title">Acceso Restringido</h1>
-              <p className="splash-subtitle">Inicia sesión para gestionar puntos</p>
+              <p className="splash-subtitle">Inicia sesión como supervisor</p>
             </div>
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
               <input 
@@ -104,8 +105,8 @@ const SplashScreen = ({ onLogin, onGuest, session }) => {
                 {loading ? 'Verificando...' : 'Ingresar al Dashboard'}
               </button>
             </form>
-            <button className="splash-back" onClick={() => setView('main')}>
-              <ArrowLeft size={16} /> Volver
+            <button className="splash-back" onClick={() => setView('main')} style={{ background: 'transparent' }}>
+              Volver
             </button>
           </>
         )}
@@ -133,20 +134,35 @@ const LocationCard = ({ loc, dayLabel, session, onToggleCompletado }) => {
     setIsUpdating(false);
   };
 
-  const exportPointLogistics = () => {
+  const exportPointPDF = () => {
     if (!visibleMaterials || visibleMaterials.length === 0) {
       alert("No hay materiales en este punto para exportar.");
       return;
     }
-    const dataToExport = visibleMaterials.map(m => ({
-      Ítem: m.Item,
-      Cantidad: m.Cantidad
-    }));
 
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Logística Punto");
-    XLSX.writeFile(workbook, `Logistica_${getPuntoName(loc)}.xlsx`);
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.setTextColor(15, 23, 42); // slate-900
+    doc.text(`Logística del Punto: ${getPuntoName(loc)}`, 14, 20);
+    
+    doc.setFontSize(11);
+    doc.setTextColor(71, 85, 105); // slate-600
+    doc.text(`Destino: ${loc['DESTINO ESP.']} | Sector: ${loc.sector}`, 14, 28);
+    
+    const tableColumn = ["Ítem", "Cantidad"];
+    const tableRows = visibleMaterials.map(m => [m.Item, m.Cantidad]);
+
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 35,
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246] }, // blue-500
+      styles: { fontSize: 10, cellPadding: 4 },
+      alternateRowStyles: { fillColor: [241, 245, 249] }
+    });
+    
+    doc.save(`Logistica_Punto_${getPuntoName(loc).replace(/\s/g, '_')}.pdf`);
   };
 
   const mapLink = loc.Latitud && loc.Longitud ? `https://maps.google.com/maps?q=${loc.Latitud},${loc.Longitud}` : '';
@@ -187,39 +203,53 @@ const LocationCard = ({ loc, dayLabel, session, onToggleCompletado }) => {
 
       <div style={{ padding: '0 1rem 1rem 1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
         {loc.Latitud && loc.Longitud && (
-          <a 
-            href={waLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="map-nav-btn"
-            style={{ background: '#25D366', color: '#fff', border: 'none' }}
-          >
-            <Navigation size={16} />
-            Compartir WhatsApp
-          </a>
+          <>
+            <a 
+              href={mapLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="map-nav-btn"
+              style={{ background: 'var(--overlay-w-05)', color: 'var(--text-main)', border: '1px solid var(--border-light)' }}
+            >
+              <Map size={16} />
+              Cómo Llegar
+            </a>
+            <a 
+              href={waLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="map-nav-btn"
+              style={{ background: '#25D366', color: '#fff', border: 'none' }}
+            >
+              <Navigation size={16} />
+              WhatsApp
+            </a>
+          </>
         )}
         
-        <button 
-          onClick={handleToggle}
-          disabled={!session || isUpdating}
-          className="map-nav-btn"
-          style={{ 
-            background: loc.completado ? 'var(--c-ptz)' : 'var(--overlay-w-10)', 
-            cursor: session ? 'pointer' : 'not-allowed',
-            opacity: session ? 1 : 0.5,
-            border: 'none', color: '#fff'
-          }}
-        >
-          {loc.completado ? <CheckSquare size={16} /> : <Square size={16} />}
-          {isUpdating ? 'Guardando...' : loc.completado ? 'Completado' : 'Marcar Completado'}
-        </button>
+        {session && (
+          <button 
+            onClick={handleToggle}
+            disabled={isUpdating}
+            className="map-nav-btn"
+            style={{ 
+              background: loc.completado ? 'var(--c-ptz)' : 'var(--overlay-w-10)', 
+              cursor: 'pointer',
+              border: loc.completado ? 'none' : '1px solid var(--border-light)', 
+              color: loc.completado ? '#fff' : 'var(--text-main)'
+            }}
+          >
+            {loc.completado ? <CheckSquare size={16} /> : <Square size={16} />}
+            {isUpdating ? 'Guardando...' : loc.completado ? 'Completado (Desmarcar)' : 'Marcar Completado'}
+          </button>
+        )}
 
         <button 
-          onClick={exportPointLogistics}
+          onClick={exportPointPDF}
           className="map-nav-btn"
-          style={{ background: 'var(--primary)', color: '#fff', border: 'none' }}
+          style={{ background: 'linear-gradient(135deg, #ef4444, #b91c1c)', color: '#fff', border: 'none' }}
         >
-          <Download size={16} /> Exportar Excel
+          <Download size={16} /> Exportar PDF
         </button>
       </div>
 
@@ -276,15 +306,26 @@ const SectorGlobalLogistics = ({ materiales, sectorName }) => {
   
   if (!materiales || materiales.length === 0) return null;
 
-  const exportSectorLogistics = () => {
-    const dataToExport = materiales.map(m => ({
-      Ítem: m.Item,
-      Cantidad: m.Cantidad
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Logística Global");
-    XLSX.writeFile(workbook, `Logistica_Global_${sectorName}.xlsx`);
+  const exportSectorPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.setTextColor(15, 23, 42);
+    doc.text(`Logística Global del Sector: ${sectorName}`, 14, 20);
+    
+    const tableColumn = ["Ítem", "Cantidad"];
+    const tableRows = materiales.map(m => [m.Item, m.Cantidad]);
+
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246] },
+      styles: { fontSize: 10, cellPadding: 4 },
+      alternateRowStyles: { fillColor: [241, 245, 249] }
+    });
+    
+    doc.save(`Logistica_Global_${sectorName.replace(/\s/g, '_')}.pdf`);
   };
 
   return (
@@ -301,11 +342,11 @@ const SectorGlobalLogistics = ({ materiales, sectorName }) => {
       {expanded && (
         <div style={{ padding: '1rem' }}>
           <button 
-            onClick={exportSectorLogistics}
+            onClick={exportSectorPDF}
             className="map-nav-btn"
-            style={{ background: 'var(--secondary)', color: '#fff', border: 'none', marginBottom: '1rem', width: 'fit-content' }}
+            style={{ background: 'linear-gradient(135deg, #ef4444, #b91c1c)', color: '#fff', border: 'none', marginBottom: '1rem', width: 'fit-content' }}
           >
-            <Download size={16} /> Exportar Excel Global
+            <Download size={16} /> Exportar PDF Global
           </button>
           <div className="materials-grid" style={{ marginBottom: 0 }}>
             {materiales.map((mat, idx) => (
@@ -326,11 +367,91 @@ const SectorGlobalLogistics = ({ materiales, sectorName }) => {
   );
 };
 
+const AdminDashboard = ({ data }) => {
+  if (!data) return null;
+
+  const rankings = [];
+  let totalCompletados = 0;
+  let totalAsignados = 0;
+
+  Object.keys(data).forEach(cuadrilla => {
+    let completados = 0;
+    let asignados = 0;
+    Object.keys(data[cuadrilla]).forEach(sector => {
+       const inst = data[cuadrilla][sector].Instalaciones || [];
+       asignados += inst.length;
+       completados += inst.filter(i => i.completado).length;
+    });
+    totalCompletados += completados;
+    totalAsignados += asignados;
+    rankings.push({ 
+      cuadrilla: cuadrilla.replace('CUADRILLA-', 'C-'), 
+      completados, 
+      asignados,
+      progreso: asignados > 0 ? ((completados / asignados) * 100).toFixed(1) : 0
+    });
+  });
+
+  rankings.sort((a,b) => b.completados - a.completados);
+
+  return (
+    <div className="main-scroll-area">
+      <div style={{ marginBottom: '2rem' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+          <BarChart2 size={24} color="var(--primary)" /> Panel de Métricas
+        </h2>
+        <p style={{ color: 'var(--text-muted)' }}>Vista global de avances por cuadrilla y estado del proyecto.</p>
+      </div>
+
+      <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: '2rem' }}>
+        <div className="kpi-card" style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))', borderColor: 'rgba(59, 130, 246, 0.3)' }}>
+          <div className="kpi-icon" style={{color: 'var(--primary)'}}><Award size={32}/></div>
+          <div className="kpi-info">
+            <span className="kpi-val" style={{ fontSize: '2rem' }}>{totalCompletados}</span>
+            <span className="kpi-lbl">Puntos Completados Global</span>
+          </div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-icon" style={{color: 'var(--text-muted)'}}><MapPin size={32}/></div>
+          <div className="kpi-info">
+            <span className="kpi-val" style={{ fontSize: '2rem' }}>{totalAsignados}</span>
+            <span className="kpi-lbl">Total de Puntos Asignados</span>
+          </div>
+        </div>
+      </div>
+
+      <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)' }}>Ranking de Cuadrillas</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {rankings.map((r, i) => (
+          <div key={i} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', padding: '1.5rem', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : 'var(--text-muted)' }}>
+              #{i + 1}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{r.cuadrilla}</span>
+                <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{r.completados} / {r.asignados} pts</span>
+              </div>
+              <div style={{ width: '100%', height: '8px', background: 'var(--overlay-w-10)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${r.progreso}%`, background: 'var(--primary)', transition: 'width 1s ease-out' }}></div>
+              </div>
+            </div>
+            <div style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--text-main)' }}>
+              {r.progreso}%
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const App = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
   const [hasEntered, setHasEntered] = useState(false);
+  const [viewMode, setViewMode] = useState('operative'); // operative, metrics
 
   const [activeCuadrilla, setActiveCuadrilla] = useState('');
   const [expandedSector, setExpandedSector] = useState(null);
@@ -386,6 +507,7 @@ const App = () => {
         
         newData[p.cuadrilla][p.sector].Instalaciones.push({
           id: p.id,
+          sector: p.sector,
           'DESTINO ESP.': p.destino_esp,
           'FRENTE': p.frente,
           'CAMARA PTZ': p.camara_ptz,
@@ -425,6 +547,7 @@ const App = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setHasEntered(false);
+    setViewMode('operative');
   };
 
   const currentData = data && activeCuadrilla ? data[activeCuadrilla] : {};
@@ -468,6 +591,8 @@ const App = () => {
     const aEquipos = new Set();
     const aFechas = new Set();
 
+    const isGuest = !session;
+
     allSectors.forEach(sector => {
       const sectorData = currentData[sector];
       const instalaciones = sectorData.Instalaciones || [];
@@ -476,6 +601,9 @@ const App = () => {
       const sectorPasses = filterSector === 'ALL' || filterSector === sector;
 
       const filteredInst = instalaciones.filter(loc => {
+        // FILTRO PRINCIPAL: Si es invitado y el punto está completado, ocultarlo.
+        if (isGuest && loc.completado) return false;
+
         const ptz = loc['CAMARA PTZ'] && loc['CAMARA PTZ'] !== '0';
         const multi = loc['CAMARA MULTISENSOR'] && loc['CAMARA MULTISENSOR'] !== '0';
         const altavoz = loc['ALTAVOZ IP'] && loc['ALTAVOZ IP'] !== '0';
@@ -541,7 +669,7 @@ const App = () => {
         return numA - numB;
       })
     };
-  }, [data, activeCuadrilla, filterSector, filterEquipo, filterFecha, filterPunto, currentData, allSectors, dateToDayIndex]);
+  }, [data, activeCuadrilla, filterSector, filterEquipo, filterFecha, filterPunto, currentData, allSectors, dateToDayIndex, session]);
 
   const displaySectors = Object.keys(filteredSectors).sort();
 
@@ -585,7 +713,7 @@ const App = () => {
               <Activity size={28} color="var(--primary)" />
               <div>
                 <h2>Dashboard</h2>
-                <p className="subtitle">Operativo</p>
+                <p className="subtitle">{session ? 'Supervisor' : 'Operativo'}</p>
               </div>
             </div>
             <button className="close-sidebar-btn" onClick={() => setIsSidebarOpen(false)}>
@@ -619,63 +747,87 @@ const App = () => {
               </div>
             </div>
 
-            <div className="sidebar-section">
-              <h3 className="sidebar-title"><HardHat size={16} /> Cuadrilla Activa</h3>
-              <div className="cuadrilla-nav">
-                {cuadrillas.map(c => (
+            {session && (
+              <div className="sidebar-section" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
+                <h3 className="sidebar-title"><BarChart2 size={16} /> Vistas Administrativas</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <button 
-                    key={c}
-                    className={`cuadrilla-nav-btn ${activeCuadrilla === c ? 'active' : ''}`}
-                    onClick={() => { setActiveCuadrilla(c); setIsSidebarOpen(false); }}
+                    onClick={() => { setViewMode('operative'); setIsSidebarOpen(false); }}
+                    className={`cuadrilla-nav-btn ${viewMode === 'operative' ? 'active' : ''}`}
                   >
-                    <span className="c-name">{c.replace('CUADRILLA-', 'C-')}</span>
-                    {activeCuadrilla === c && <div className="active-dot"></div>}
+                    <Map size={16} /> Mapa Operativo
                   </button>
-                ))}
+                  <button 
+                    onClick={() => { setViewMode('metrics'); setIsSidebarOpen(false); }}
+                    className={`cuadrilla-nav-btn ${viewMode === 'metrics' ? 'active' : ''}`}
+                  >
+                    <BarChart2 size={16} /> Métricas / Avances
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="sidebar-section">
-              <h3 className="sidebar-title"><Filter size={16} /> Filtros de Búsqueda</h3>
-              <div className="filter-controls-vertical">
-                <div className="filter-group">
-                  <label>Sector</label>
-                  <select value={filterSector} onChange={(e) => setFilterSector(e.target.value)}>
-                    <option value="ALL">Todos los Sectores</option>
-                    {availableSectors.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+            {viewMode === 'operative' && (
+              <>
+                <div className="sidebar-section">
+                  <h3 className="sidebar-title"><HardHat size={16} /> Cuadrilla Activa</h3>
+                  <div className="cuadrilla-nav">
+                    {cuadrillas.map(c => (
+                      <button 
+                        key={c}
+                        className={`cuadrilla-nav-btn ${activeCuadrilla === c ? 'active' : ''}`}
+                        onClick={() => { setActiveCuadrilla(c); setIsSidebarOpen(false); }}
+                      >
+                        <span className="c-name">{c.replace('CUADRILLA-', 'C-')}</span>
+                        {activeCuadrilla === c && <div className="active-dot"></div>}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="filter-group">
-                  <label>Punto Específico</label>
-                  <select value={filterPunto} onChange={(e) => setFilterPunto(e.target.value)}>
-                    <option value="ALL">Todos los Puntos</option>
-                    {availablePuntos.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
+
+                <div className="sidebar-section">
+                  <h3 className="sidebar-title"><Filter size={16} /> Filtros de Búsqueda</h3>
+                  <div className="filter-controls-vertical">
+                    <div className="filter-group">
+                      <label>Sector</label>
+                      <select value={filterSector} onChange={(e) => setFilterSector(e.target.value)}>
+                        <option value="ALL">Todos los Sectores</option>
+                        {availableSectors.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div className="filter-group">
+                      <label>Punto Específico</label>
+                      <select value={filterPunto} onChange={(e) => setFilterPunto(e.target.value)}>
+                        <option value="ALL">Todos los Puntos</option>
+                        {availablePuntos.map(p => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                    </div>
+                    <div className="filter-group">
+                      <label>Equipo Principal</label>
+                      <select value={filterEquipo} onChange={(e) => setFilterEquipo(e.target.value)}>
+                        <option value="ALL">Cualquier Equipo</option>
+                        {availableEquipos.includes('PTZ') && <option value="PTZ">Cámara PTZ</option>}
+                        {availableEquipos.includes('MULTI') && <option value="MULTI">Cámara Multisensor</option>}
+                        {availableEquipos.includes('ALTAVOZ') && <option value="ALTAVOZ">Altavoz IP</option>}
+                      </select>
+                    </div>
+                    <div className="filter-group">
+                      <label>Día de Instalación</label>
+                      <select value={filterFecha} onChange={(e) => setFilterFecha(e.target.value)}>
+                        <option value="ALL">Cualquier Día</option>
+                        {availableFechas.map(f => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                    </div>
+                    <button className="reset-btn-full" onClick={() => {
+                      setFilterSector('ALL');
+                      setFilterEquipo('ALL');
+                      setFilterFecha('ALL');
+                      setFilterPunto('ALL');
+                    }}>Limpiar Filtros</button>
+                  </div>
                 </div>
-                <div className="filter-group">
-                  <label>Equipo Principal</label>
-                  <select value={filterEquipo} onChange={(e) => setFilterEquipo(e.target.value)}>
-                    <option value="ALL">Cualquier Equipo</option>
-                    {availableEquipos.includes('PTZ') && <option value="PTZ">Cámara PTZ</option>}
-                    {availableEquipos.includes('MULTI') && <option value="MULTI">Cámara Multisensor</option>}
-                    {availableEquipos.includes('ALTAVOZ') && <option value="ALTAVOZ">Altavoz IP</option>}
-                  </select>
-                </div>
-                <div className="filter-group">
-                  <label>Día de Instalación</label>
-                  <select value={filterFecha} onChange={(e) => setFilterFecha(e.target.value)}>
-                    <option value="ALL">Cualquier Día</option>
-                    {availableFechas.map(f => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                </div>
-                <button className="reset-btn-full" onClick={() => {
-                  setFilterSector('ALL');
-                  setFilterEquipo('ALL');
-                  setFilterFecha('ALL');
-                  setFilterPunto('ALL');
-                }}>Limpiar Filtros</button>
-              </div>
-            </div>
+              </>
+            )}
             
             {session && (
               <div className="sidebar-section" style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem', marginTop: 'auto' }}>
@@ -697,7 +849,7 @@ const App = () => {
             </button>
             <div className="mobile-header-title">
               <Activity size={20} color="var(--primary)" />
-              <h2>Dashboard</h2>
+              <h2>Dashboard {session && viewMode === 'metrics' ? 'Métricas' : ''}</h2>
             </div>
             {session && (
               <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: 'var(--error)', padding: '0.5rem' }}>
@@ -719,103 +871,109 @@ const App = () => {
             >
               {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            <div className="mobile-cuadrilla-badge">
-              {activeCuadrilla.replace('CUADRILLA-', 'C-')}
-            </div>
+            {viewMode === 'operative' && (
+              <div className="mobile-cuadrilla-badge">
+                {activeCuadrilla.replace('CUADRILLA-', 'C-')}
+              </div>
+            )}
           </header>
 
-          <div className="main-scroll-area">
-            <div className="kpi-grid">
-              <div className="kpi-card">
-                <div className="kpi-icon" style={{color: 'var(--primary)'}}><MapPin size={24}/></div>
-                <div className="kpi-info">
-                  <span className="kpi-val">{stats.statLocs}</span>
-                  <span className="kpi-lbl">Ubicaciones</span>
-                </div>
-              </div>
-              <div className="kpi-card">
-                <div className="kpi-icon" style={{color: 'var(--c-ptz)'}}><Camera size={24}/></div>
-                <div className="kpi-info">
-                  <span className="kpi-val">{stats.statPtz}</span>
-                  <span className="kpi-lbl">Total PTZ</span>
-                </div>
-              </div>
-              <div className="kpi-card">
-                <div className="kpi-icon" style={{color: 'var(--c-multi)'}}><Video size={24}/></div>
-                <div className="kpi-info">
-                  <span className="kpi-val">{stats.statMulti}</span>
-                  <span className="kpi-lbl">Multisensor</span>
-                </div>
-              </div>
-              <div className="kpi-card">
-                <div className="kpi-icon" style={{color: 'var(--c-altavoz)'}}><Volume2 size={24}/></div>
-                <div className="kpi-info">
-                  <span className="kpi-val">{stats.statAltavoz}</span>
-                  <span className="kpi-lbl">Altavoces</span>
-                </div>
-              </div>
-              <div className="kpi-card">
-                <div className="kpi-icon" style={{color: 'var(--c-boton)'}}><ShieldAlert size={24}/></div>
-                <div className="kpi-info">
-                  <span className="kpi-val">{stats.statBoton}</span>
-                  <span className="kpi-lbl">Botones</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="sectors-container">
-              {displaySectors.map(sector => {
-                const sectorData = filteredSectors[sector];
-                const instalaciones = sectorData.Instalaciones || [];
-                const materiales = sectorData.Materiales || [];
-                const isExpanded = expandedSector === sector;
-                
-                return (
-                  <div key={sector} className={`sector-accordion ${isExpanded ? 'expanded' : ''}`}>
-                    <div className="sector-header" onClick={() => toggleSector(sector)}>
-                      <div className="sector-title">
-                        <Target className="sector-icon" size={20} />
-                        <h2>{sector}</h2>
-                        {instalaciones.length > 0 && <span className="count-badge">{instalaciones.length} Loc.</span>}
-                      </div>
-                      <div className="chevron-icon">
-                        <ChevronDown size={24} />
-                      </div>
-                    </div>
-                    
-                    <div className="sector-body">
-                      <SectorGlobalLogistics materiales={materiales} sectorName={sector} />
-
-                      {instalaciones.length > 0 && (
-                        <div className="section-block">
-                          <h3 className="section-title"><MapPin size={18} /> Frentes Filtrados</h3>
-                          <div className="locations-grid">
-                            {instalaciones.map((loc, idx) => {
-                              const dRaw = loc['FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO']?.split(' ')[0];
-                              const dayLabel = dRaw && dRaw !== '-' ? dateToDayIndex[dRaw] : null;
-                              return <LocationCard key={idx} loc={loc} dayLabel={dayLabel} session={session} onToggleCompletado={handleToggleCompletado} />;
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+          {viewMode === 'metrics' ? (
+            <AdminDashboard data={data} />
+          ) : (
+            <div className="main-scroll-area">
+              <div className="kpi-grid">
+                <div className="kpi-card">
+                  <div className="kpi-icon" style={{color: 'var(--primary)'}}><MapPin size={24}/></div>
+                  <div className="kpi-info">
+                    <span className="kpi-val">{stats.statLocs}</span>
+                    <span className="kpi-lbl">Ubicaciones</span>
                   </div>
-                );
-              })}
-              {displaySectors.length === 0 && (
-                <div className="empty-state">
-                  <Filter size={48} opacity={0.2} />
-                  <p>No se encontraron resultados para los filtros seleccionados.</p>
-                  <button className="reset-btn" onClick={() => {
-                    setFilterSector('ALL');
-                    setFilterEquipo('ALL');
-                    setFilterFecha('ALL');
-                    setFilterPunto('ALL');
-                  }}>Limpiar Filtros</button>
                 </div>
-              )}
+                <div className="kpi-card">
+                  <div className="kpi-icon" style={{color: 'var(--c-ptz)'}}><Camera size={24}/></div>
+                  <div className="kpi-info">
+                    <span className="kpi-val">{stats.statPtz}</span>
+                    <span className="kpi-lbl">Total PTZ</span>
+                  </div>
+                </div>
+                <div className="kpi-card">
+                  <div className="kpi-icon" style={{color: 'var(--c-multi)'}}><Video size={24}/></div>
+                  <div className="kpi-info">
+                    <span className="kpi-val">{stats.statMulti}</span>
+                    <span className="kpi-lbl">Multisensor</span>
+                  </div>
+                </div>
+                <div className="kpi-card">
+                  <div className="kpi-icon" style={{color: 'var(--c-altavoz)'}}><Volume2 size={24}/></div>
+                  <div className="kpi-info">
+                    <span className="kpi-val">{stats.statAltavoz}</span>
+                    <span className="kpi-lbl">Altavoces</span>
+                  </div>
+                </div>
+                <div className="kpi-card">
+                  <div className="kpi-icon" style={{color: 'var(--c-boton)'}}><ShieldAlert size={24}/></div>
+                  <div className="kpi-info">
+                    <span className="kpi-val">{stats.statBoton}</span>
+                    <span className="kpi-lbl">Botones</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="sectors-container">
+                {displaySectors.map(sector => {
+                  const sectorData = filteredSectors[sector];
+                  const instalaciones = sectorData.Instalaciones || [];
+                  const materiales = sectorData.Materiales || [];
+                  const isExpanded = expandedSector === sector;
+                  
+                  return (
+                    <div key={sector} className={`sector-accordion ${isExpanded ? 'expanded' : ''}`}>
+                      <div className="sector-header" onClick={() => toggleSector(sector)}>
+                        <div className="sector-title">
+                          <Target className="sector-icon" size={20} />
+                          <h2>{sector}</h2>
+                          {instalaciones.length > 0 && <span className="count-badge">{instalaciones.length} Loc.</span>}
+                        </div>
+                        <div className="chevron-icon">
+                          <ChevronDown size={24} />
+                        </div>
+                      </div>
+                      
+                      <div className="sector-body">
+                        <SectorGlobalLogistics materiales={materiales} sectorName={sector} />
+
+                        {instalaciones.length > 0 && (
+                          <div className="section-block">
+                            <h3 className="section-title"><MapPin size={18} /> Frentes Filtrados</h3>
+                            <div className="locations-grid">
+                              {instalaciones.map((loc, idx) => {
+                                const dRaw = loc['FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO']?.split(' ')[0];
+                                const dayLabel = dRaw && dRaw !== '-' ? dateToDayIndex[dRaw] : null;
+                                return <LocationCard key={idx} loc={loc} dayLabel={dayLabel} session={session} onToggleCompletado={handleToggleCompletado} />;
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                {displaySectors.length === 0 && (
+                  <div className="empty-state">
+                    <Filter size={48} opacity={0.2} />
+                    <p>{!session ? 'Todos los puntos han sido completados o no hay resultados para estos filtros.' : 'No se encontraron resultados para los filtros seleccionados.'}</p>
+                    <button className="reset-btn" onClick={() => {
+                      setFilterSector('ALL');
+                      setFilterEquipo('ALL');
+                      setFilterFecha('ALL');
+                      setFilterPunto('ALL');
+                    }}>Limpiar Filtros</button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </main>
       </div>
     </>
