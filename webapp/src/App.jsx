@@ -421,7 +421,7 @@ const AdminDashboard = ({ data }) => {
         <p style={{ color: 'var(--text-muted)' }}>Vista global de avances por cuadrilla y estado del proyecto.</p>
       </div>
 
-      <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: '1rem' }}>
+      <div className="kpi-grid admin-kpi-top" style={{ marginBottom: '1rem' }}>
         <div className="kpi-card" style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))', borderColor: 'rgba(59, 130, 246, 0.3)' }}>
           <div className="kpi-icon" style={{color: 'var(--primary)'}}><Award size={32}/></div>
           <div className="kpi-info">
@@ -439,7 +439,7 @@ const AdminDashboard = ({ data }) => {
       </div>
 
       <h3 style={{ marginBottom: '1rem', color: 'var(--text-main)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Equipos Instalados</h3>
-      <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: '2rem' }}>
+      <div className="kpi-grid admin-kpi-bottom" style={{ marginBottom: '2rem' }}>
         <div className="kpi-card" style={{ padding: '1rem' }}>
           <div className="kpi-icon" style={{color: 'var(--c-ptz)'}}><Camera size={20}/></div>
           <div className="kpi-info">
@@ -466,11 +466,11 @@ const AdminDashboard = ({ data }) => {
       <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.9rem' }}>Ranking de Cuadrillas</h3>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {rankings.map((r, i) => (
-          <div key={i} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', padding: '1.5rem', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : 'var(--text-muted)' }}>
+          <div key={i} className="ranking-card">
+            <div className="ranking-position" style={{ color: i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : 'var(--text-muted)' }}>
               #{i + 1}
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, width: '100%' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                 <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{r.cuadrilla}</span>
                 <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{r.completados} / {r.asignados} pts</span>
@@ -479,7 +479,7 @@ const AdminDashboard = ({ data }) => {
                 <div style={{ height: '100%', width: `${r.progreso}%`, background: 'var(--primary)', transition: 'width 1s ease-out' }}></div>
               </div>
             </div>
-            <div style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--text-main)' }}>
+            <div className="ranking-score">
               {r.progreso}%
             </div>
           </div>
