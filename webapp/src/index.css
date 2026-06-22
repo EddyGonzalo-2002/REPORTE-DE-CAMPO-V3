@@ -1000,7 +1000,7 @@ body {
 
 /* RESPONSIVE METRICS DASHBOARD */
 .admin-kpi-top {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
 }
 .admin-kpi-bottom {
   grid-template-columns: repeat(3, 1fr);

@@ -475,7 +475,7 @@ const AdminDashboard = ({ data }) => {
         <p style={{ color: 'var(--text-muted)' }}>Vista global de avances por cuadrilla y estado del proyecto.</p>
       </div>
 
-      <div className="kpi-grid admin-kpi-top" style={{ marginBottom: '1rem', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      <div className="kpi-grid admin-kpi-top" style={{ marginBottom: '1rem' }}>
         <div className="kpi-card" style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))', borderColor: 'rgba(59, 130, 246, 0.3)' }}>
           <div className="kpi-icon" style={{color: 'var(--primary)'}}><Award size={32}/></div>
           <div className="kpi-info">
