@@ -155,11 +155,12 @@ const LocationCard = ({ loc, dayLabel, session, onToggleCompletado }) => {
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 35,
+      startY: 32,
       theme: 'grid',
-      headStyles: { fillColor: [59, 130, 246] }, // blue-500
-      styles: { fontSize: 10, cellPadding: 4 },
-      alternateRowStyles: { fillColor: [241, 245, 249] }
+      headStyles: { fillColor: [59, 130, 246], fontSize: 9, cellPadding: 3 },
+      styles: { fontSize: 8, cellPadding: 3, minCellHeight: 4 },
+      alternateRowStyles: { fillColor: [241, 245, 249] },
+      margin: { top: 10, bottom: 10, left: 14, right: 14 }
     });
     
     doc.save(`Logistica_Punto_${getPuntoName(loc).replace(/\s/g, '_')}.pdf`);
@@ -318,11 +319,12 @@ const SectorGlobalLogistics = ({ materiales, sectorName }) => {
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 30,
+      startY: 28,
       theme: 'grid',
-      headStyles: { fillColor: [59, 130, 246] },
-      styles: { fontSize: 10, cellPadding: 4 },
-      alternateRowStyles: { fillColor: [241, 245, 249] }
+      headStyles: { fillColor: [59, 130, 246], fontSize: 9, cellPadding: 3 },
+      styles: { fontSize: 8, cellPadding: 3, minCellHeight: 4 },
+      alternateRowStyles: { fillColor: [241, 245, 249] },
+      margin: { top: 10, bottom: 10, left: 14, right: 14 }
     });
     
     doc.save(`Logistica_Global_${sectorName.replace(/\s/g, '_')}.pdf`);
@@ -716,37 +718,21 @@ const App = () => {
                 <p className="subtitle">{session ? 'Supervisor' : 'Operativo'}</p>
               </div>
             </div>
-            <button className="close-sidebar-btn" onClick={() => setIsSidebarOpen(false)}>
-              <X size={24} />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <button 
+                onClick={toggleTheme} 
+                style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex' }}
+                title={theme === 'dark' ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
+              >
+                {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
+              <button className="close-sidebar-btn" onClick={() => setIsSidebarOpen(false)}>
+                <X size={24} />
+              </button>
+            </div>
           </div>
 
           <div className="sidebar-scroll">
-            <div className="sidebar-section" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 600 }}>Apariencia</span>
-                <button 
-                  onClick={toggleTheme} 
-                  style={{
-                    background: 'var(--overlay-w-05)',
-                    border: '1px solid var(--border-light)',
-                    color: 'var(--text-main)',
-                    padding: '0.5rem',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}
-                >
-                  {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>
-                    {theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
-                  </span>
-                </button>
-              </div>
-            </div>
-
             {session && (
               <div className="sidebar-section" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
                 <h3 className="sidebar-title"><BarChart2 size={16} /> Vistas Administrativas</h3>
