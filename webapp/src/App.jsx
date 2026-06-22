@@ -5,7 +5,7 @@ import {
   ChevronDown, MapPin, Package, CalendarDays, Camera, 
   Video, Volume2, ShieldAlert, Wifi, Link2, Layers, 
   HardHat, Box, Cable, Zap, Server, Filter, Activity,
-  Target, Menu, X, Navigation, Sun, Moon, CheckSquare, Square, LogOut, Download, Map, BarChart2, Award
+  Target, Menu, X, Navigation, Sun, Moon, CheckSquare, Square, LogOut, Download, Map, BarChart2, Award, Search
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
@@ -115,7 +115,7 @@ const SplashScreen = ({ onLogin, onGuest, session }) => {
   );
 };
 
-const LocationCard = ({ loc, dayLabel, session, onToggleCompletado }) => {
+const LocationCard = ({ loc, dayLabel, session, onToggleCompletado, cuadrillaGlobal }) => {
   const [showLogistica, setShowLogistica] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   
@@ -176,6 +176,11 @@ const LocationCard = ({ loc, dayLabel, session, onToggleCompletado }) => {
         <div className="loc-destino">
           <span className="destino-lbl">Punto: {getPuntoName(loc)}</span>
           <h4>{loc['DESTINO ESP.']}</h4>
+          {cuadrillaGlobal && (
+            <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600, marginTop: '0.2rem', display: 'inline-block' }}>
+              <HardHat size={12} style={{ display: 'inline', verticalAlign: 'text-bottom' }} /> {cuadrillaGlobal}
+            </span>
+          )}
         </div>
         <div className="frente-badge">Frente {loc['FRENTE']}</div>
       </div>
@@ -501,6 +506,8 @@ const App = () => {
   const [filterFecha, setFilterFecha] = useState('ALL');
   const [filterPunto, setFilterPunto] = useState('ALL');
 
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
@@ -566,7 +573,7 @@ const App = () => {
       
       setData(newData);
       const cuadrillas = Object.keys(newData).sort();
-      if (cuadrillas.length > 0) setActiveCuadrilla(cuadrillas[0]);
+      if (cuadrillas.length > 0 && !activeCuadrilla) setActiveCuadrilla(cuadrillas[0]);
     } catch (e) {
       console.error(e);
     }
@@ -586,11 +593,8 @@ const App = () => {
     await supabase.auth.signOut();
     setHasEntered(false);
     setViewMode('operative');
+    setGlobalSearchQuery('');
   };
-
-  const currentData = data && activeCuadrilla ? data[activeCuadrilla] : {};
-  const allSectors = currentData ? Object.keys(currentData).sort() : [];
-  const cuadrillas = data ? Object.keys(data).sort() : [];
 
   const dateToDayIndex = useMemo(() => {
     if (!data) return {};
@@ -606,6 +610,30 @@ const App = () => {
     const sortedDates = Array.from(dates).sort();
     return Object.fromEntries(sortedDates.map((d, i) => [d, `Día ${i + 1}`]));
   }, [data]);
+
+  const globalSearchResults = useMemo(() => {
+    if (!globalSearchQuery || !data || !session) return [];
+    const results = [];
+    const query = globalSearchQuery.toLowerCase();
+    
+    Object.keys(data).forEach(cuadrilla => {
+      Object.keys(data[cuadrilla]).forEach(sector => {
+        const inst = data[cuadrilla][sector].Instalaciones || [];
+        inst.forEach(loc => {
+          const punto = getPuntoName(loc).toLowerCase();
+          const destino = (loc['DESTINO ESP.'] || '').toLowerCase();
+          if (punto.includes(query) || destino.includes(query)) {
+            results.push({ ...loc, cuadrillaPertenece: cuadrilla.replace('CUADRILLA-', 'C-') });
+          }
+        });
+      });
+    });
+    return results;
+  }, [data, globalSearchQuery, session]);
+
+  const currentData = data && activeCuadrilla ? data[activeCuadrilla] : {};
+  const allSectors = currentData ? Object.keys(currentData).sort() : [];
+  const cuadrillas = data ? Object.keys(data).sort() : [];
 
   const { 
     filteredSectors, 
@@ -732,6 +760,8 @@ const App = () => {
     return <div style={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center' }}>Cargando datos desde Supabase...</div>;
   }
 
+  const isGlobalSearchActive = session && globalSearchQuery.length > 0 && viewMode === 'operative';
+
   return (
     <>
       {!hasEntered && (
@@ -774,13 +804,13 @@ const App = () => {
                 <h3 className="sidebar-title"><BarChart2 size={16} /> Vistas Administrativas</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <button 
-                    onClick={() => { setViewMode('operative'); setIsSidebarOpen(false); }}
-                    className={`cuadrilla-nav-btn ${viewMode === 'operative' ? 'active' : ''}`}
+                    onClick={() => { setViewMode('operative'); setGlobalSearchQuery(''); setIsSidebarOpen(false); }}
+                    className={`cuadrilla-nav-btn ${viewMode === 'operative' && !globalSearchQuery ? 'active' : ''}`}
                   >
                     <Map size={16} /> Mapa Operativo
                   </button>
                   <button 
-                    onClick={() => { setViewMode('metrics'); setIsSidebarOpen(false); }}
+                    onClick={() => { setViewMode('metrics'); setGlobalSearchQuery(''); setIsSidebarOpen(false); }}
                     className={`cuadrilla-nav-btn ${viewMode === 'metrics' ? 'active' : ''}`}
                   >
                     <BarChart2 size={16} /> Métricas / Avances
@@ -789,21 +819,38 @@ const App = () => {
               </div>
             )}
 
-            {viewMode === 'operative' && (
+            {session && (
+              <div className="sidebar-section" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
+                <h3 className="sidebar-title"><Search size={16} /> Búsqueda Global</h3>
+                <input 
+                  type="text" 
+                  className="splash-input" 
+                  placeholder="Buscar cualquier punto..."
+                  value={globalSearchQuery}
+                  onChange={(e) => { setGlobalSearchQuery(e.target.value); setViewMode('operative'); }}
+                  style={{ padding: '0.6rem', fontSize: '0.9rem', borderRadius: '8px', background: 'var(--bg-main)' }}
+                />
+              </div>
+            )}
+
+            {viewMode === 'operative' && !isGlobalSearchActive && (
               <>
                 <div className="sidebar-section">
                   <h3 className="sidebar-title"><HardHat size={16} /> Cuadrilla Activa</h3>
-                  <div className="cuadrilla-nav">
-                    {cuadrillas.map(c => (
-                      <button 
-                        key={c}
-                        className={`cuadrilla-nav-btn ${activeCuadrilla === c ? 'active' : ''}`}
-                        onClick={() => { setActiveCuadrilla(c); setIsSidebarOpen(false); }}
+                  <div className="filter-group">
+                    <div style={{ position: 'relative' }}>
+                      <select 
+                        value={activeCuadrilla} 
+                        onChange={(e) => { setActiveCuadrilla(e.target.value); setIsSidebarOpen(false); }}
+                        className="splash-input"
+                        style={{ paddingRight: '2rem', appearance: 'none', background: 'var(--bg-main)' }}
                       >
-                        <span className="c-name">{c.replace('CUADRILLA-', 'C-')}</span>
-                        {activeCuadrilla === c && <div className="active-dot"></div>}
-                      </button>
-                    ))}
+                        {cuadrillas.map(c => (
+                          <option key={c} value={c}>{c.replace('CUADRILLA-', 'Cuadrilla ')}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={16} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+                    </div>
                   </div>
                 </div>
 
@@ -893,7 +940,7 @@ const App = () => {
             >
               {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            {viewMode === 'operative' && (
+            {viewMode === 'operative' && !isGlobalSearchActive && (
               <div className="mobile-cuadrilla-badge">
                 {activeCuadrilla.replace('CUADRILLA-', 'C-')}
               </div>
@@ -902,6 +949,42 @@ const App = () => {
 
           {viewMode === 'metrics' ? (
             <AdminDashboard data={data} />
+          ) : isGlobalSearchActive ? (
+            <div className="main-scroll-area">
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Search size={24} color="var(--primary)" /> Resultados de Búsqueda Global
+                </h2>
+                <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                  Mostrando {globalSearchResults.length} resultado(s) para "{globalSearchQuery}"
+                </p>
+              </div>
+
+              {globalSearchResults.length > 0 ? (
+                <div className="locations-grid">
+                  {globalSearchResults.map((loc, idx) => {
+                    const dRaw = loc['FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO']?.split(' ')[0];
+                    const dayLabel = dRaw && dRaw !== '-' ? dateToDayIndex[dRaw] : null;
+                    return (
+                      <LocationCard 
+                        key={idx} 
+                        loc={loc} 
+                        dayLabel={dayLabel} 
+                        session={session} 
+                        onToggleCompletado={handleToggleCompletado} 
+                        cuadrillaGlobal={loc.cuadrillaPertenece}
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <Search size={48} opacity={0.2} />
+                  <p>No se encontraron puntos que coincidan con la búsqueda.</p>
+                  <button className="reset-btn" onClick={() => setGlobalSearchQuery('')}>Borrar Búsqueda</button>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="main-scroll-area">
               <div className="kpi-grid">
