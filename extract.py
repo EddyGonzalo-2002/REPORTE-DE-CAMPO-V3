@@ -136,10 +136,31 @@ for sheet in sheets:
 
             # Count actual IP devices to apply logic for Switch Wi-Tek (Panic button is an H4 Video Intercom, an IP device)
             device_count = 0
+            ptz_count = 0
+            multi_count = 0
+            altavoz_count = 0
             for d_col in ['CAMARA PTZ', 'CAMARA MULTISENSOR', 'ALTAVOZ IP', 'BOTON DE PANICO']:
                 v = str(row.get(d_col, '')).strip().upper()
                 if v and v != '0' and v != '0.0' and not v.startswith('NO'):
                     device_count += 1
+                    if d_col == 'CAMARA PTZ': ptz_count += 1
+                    elif d_col == 'CAMARA MULTISENSOR': multi_count += 1
+                    elif d_col == 'ALTAVOZ IP': altavoz_count += 1
+
+            expected_pararrayos = ptz_count + multi_count + altavoz_count
+            expected_patchcord = (ptz_count * 2) + (multi_count * 2) + (altavoz_count * 1)
+
+            medio_com = str(row.get('MEDIO DE COMUNICACION', '')).strip().upper()
+            needs_extra_patchcord = False
+            if 'MEDIA CONVERTE' in medio_com or 'FIBRA' in medio_com:
+                needs_extra_patchcord = True
+            elif 'NO EXISTE' in medio_com or medio_com == 'NAN' or medio_com == '':
+                needs_extra_patchcord = True
+            elif device_count > 1: # Represents presence of switch
+                needs_extra_patchcord = True
+                
+            if needs_extra_patchcord:
+                expected_patchcord += 1
 
             is_assigned = False
             for k, v in row.items():
@@ -150,19 +171,33 @@ for sheet in sheets:
             if is_assigned:
                 mats = point_logistics.get(pk, [])
                 
-                # Apply dynamic logistics correction: Remove Switch if <= 1 device, modify Prensaestopa, add Pilotos
+                # Apply dynamic logistics correction: Remove Switch if <= 1 device, modify Prensaestopa, add Pilotos, Pararrayos, Patchcords
                 new_mats = []
+                pararrayos_item_name = 'PARARRAYOS ETHERNET (UND)'
+                patchcord_item_name = 'PATCHORE CAT 6A (UN)'
+                
                 for m in mats:
                     i_name = str(m.get('Item', '')).upper()
                     if device_count <= 1 and ('SWITCH WI-TEK' in i_name or 'FUENTE DE PODER DEL SWITCH' in i_name):
                         continue
                     if 'PRENSAESTOPA' in i_name:
                         new_mats.append({'Item': m['Item'], 'Cantidad': '3'})
+                    elif 'PARARRAYOS' in i_name:
+                        pararrayos_item_name = m['Item']
+                        continue
+                    elif 'PATCHORE' in i_name or 'PATCH CORD' in i_name or 'PATCHCORD' in i_name:
+                        patchcord_item_name = m['Item']
+                        continue
                     else:
                         new_mats.append(m)
                         
                 if not any('PRENSAESTOPA' in str(m.get('Item', '')).upper() for m in new_mats):
                     new_mats.append({'Item': 'PRENSAESTOPA (UND)', 'Cantidad': '3'})
+                
+                if expected_pararrayos > 0:
+                    new_mats.append({'Item': pararrayos_item_name, 'Cantidad': str(expected_pararrayos)})
+                if expected_patchcord > 0:
+                    new_mats.append({'Item': patchcord_item_name, 'Cantidad': str(expected_patchcord)})
                 
                 new_mats.append({'Item': 'PILOTO LED VERDE Y ROJO (PAR)', 'Cantidad': '1'})
                 

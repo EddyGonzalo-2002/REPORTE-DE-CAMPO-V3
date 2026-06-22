@@ -42,10 +42,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -110,8 +106,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -144,10 +144,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -207,8 +203,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -256,10 +256,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -324,8 +320,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -375,10 +375,6 @@
             {
               "Item": "INYECTORES POE (UND)",
               "Cantidad": "2"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
             },
             {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
@@ -445,8 +441,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -588,10 +588,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -648,8 +644,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -685,10 +685,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -745,8 +741,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -796,10 +796,6 @@
             {
               "Item": "INYECTORES POE (UND)",
               "Cantidad": "2"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
             },
             {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
@@ -866,8 +862,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -900,10 +900,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -960,6 +956,10 @@
             },
             {
               "Item": "ABRAZADERAS POSTE SEMAFORO (PAR)",
+              "Cantidad": "1"
+            },
+            {
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -1106,10 +1106,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -1163,6 +1159,10 @@
             },
             {
               "Item": "BASES DE ANCLAJE PLANO (PAR)",
+              "Cantidad": "1"
+            },
+            {
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -1203,10 +1203,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -1260,6 +1256,10 @@
             },
             {
               "Item": "BASES DE ANCLAJE PLANO (PAR)",
+              "Cantidad": "1"
+            },
+            {
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -1314,10 +1314,6 @@
             {
               "Item": "INYECTORES POE (UND)",
               "Cantidad": "2"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
             },
             {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
@@ -1384,8 +1380,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -1418,10 +1418,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -1481,8 +1477,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -1636,10 +1636,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -1704,8 +1700,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -1750,10 +1750,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -1821,8 +1817,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -1876,10 +1876,6 @@
             {
               "Item": "INYECTORES POE (UND)",
               "Cantidad": "2"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
             },
             {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
@@ -1946,8 +1942,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -1997,10 +1997,6 @@
             {
               "Item": "INYECTORES POE (UND)",
               "Cantidad": "2"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
             },
             {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
@@ -2067,8 +2063,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -2234,10 +2234,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -2302,8 +2298,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -2348,10 +2348,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -2419,8 +2415,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -2453,10 +2453,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -2516,6 +2512,10 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
               "Cantidad": "2"
             },
@@ -2562,10 +2562,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -2633,8 +2629,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -2780,10 +2780,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -2837,6 +2833,10 @@
             },
             {
               "Item": "BASES DE ANCLAJE ANGULAR (PAR)",
+              "Cantidad": "1"
+            },
+            {
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -2965,10 +2965,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -3025,8 +3021,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -3062,10 +3062,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -3122,8 +3118,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -3156,10 +3156,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -3219,6 +3215,10 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
               "Cantidad": "2"
             },
@@ -3265,10 +3265,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -3336,8 +3332,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -3475,10 +3475,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -3535,6 +3531,10 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
               "Cantidad": "2"
             },
@@ -3581,10 +3581,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -3652,8 +3648,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -3703,10 +3703,6 @@
             {
               "Item": "INYECTORES POE (UND)",
               "Cantidad": "2"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
             },
             {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
@@ -3773,8 +3769,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -3807,10 +3807,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -3867,6 +3863,10 @@
             },
             {
               "Item": "BASES DE ANCLAJE ANGULAR (PAR)",
+              "Cantidad": "1"
+            },
+            {
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -4033,10 +4033,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -4101,8 +4097,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -4154,10 +4154,6 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -4222,8 +4218,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -4256,10 +4256,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -4319,8 +4315,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -4353,10 +4353,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -4413,6 +4409,10 @@
             },
             {
               "Item": "ABRAZADERAS POSTE CONCRETO (PAR)",
+              "Cantidad": "1"
+            },
+            {
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -4579,10 +4579,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -4647,8 +4643,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -4698,10 +4698,6 @@
             {
               "Item": "INYECTORES POE (UND)",
               "Cantidad": "2"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
             },
             {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
@@ -4768,8 +4764,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -4819,10 +4819,6 @@
             {
               "Item": "INYECTORES POE (UND)",
               "Cantidad": "2"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
             },
             {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
@@ -4889,8 +4885,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -4923,10 +4923,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -4983,6 +4979,10 @@
             },
             {
               "Item": "ABRAZADERAS POSTE SEMAFORO (PAR)",
+              "Cantidad": "1"
+            },
+            {
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -5133,10 +5133,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -5193,6 +5189,10 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
               "Cantidad": "2"
             },
@@ -5227,10 +5227,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -5290,6 +5286,10 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
               "Cantidad": "2"
             },
@@ -5324,10 +5324,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -5387,8 +5383,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -5438,10 +5438,6 @@
             {
               "Item": "INYECTORES POE (UND)",
               "Cantidad": "2"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
             },
             {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
@@ -5508,8 +5504,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -5655,10 +5655,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -5715,8 +5711,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -5852,10 +5852,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -5920,8 +5916,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -5954,10 +5954,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -5997,10 +5993,6 @@
               "Cantidad": "5"
             },
             {
-              "Item": "CABLE ETHERNET (M)",
-              "Cantidad": "5"
-            },
-            {
               "Item": "CABLE ELECTRICO (M)",
               "Cantidad": "4"
             },
@@ -6017,8 +6009,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -6068,10 +6064,6 @@
             {
               "Item": "INYECTORES POE (UND)",
               "Cantidad": "2"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
             },
             {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
@@ -6138,8 +6130,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -6184,10 +6180,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -6255,8 +6247,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -6280,11 +6276,11 @@
         },
         {
           "Item": "SWITCH WI-TEK (UND)",
-          "Cantidad": "4"
+          "Cantidad": "3"
         },
         {
           "Item": "FUENTE DE PODER DEL SWITCH WI-TEK (UND)",
-          "Cantidad": "4"
+          "Cantidad": "3"
         },
         {
           "Item": "INYECTORES POE (UND)",
@@ -6292,7 +6288,7 @@
         },
         {
           "Item": "PARARRAYOS ETHERNET (UND)",
-          "Cantidad": "4"
+          "Cantidad": "5"
         },
         {
           "Item": "LLAVES TERMOMAGNETICAS (UND)",
@@ -6332,7 +6328,7 @@
         },
         {
           "Item": "CABLE ETHERNET (M)",
-          "Cantidad": "40"
+          "Cantidad": "35"
         },
         {
           "Item": "CABLE ELECTRICO (M)",
@@ -6394,10 +6390,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -6451,6 +6443,10 @@
             },
             {
               "Item": "ABRAZADERAS POSTE CONCRETO (PAR)",
+              "Cantidad": "1"
+            },
+            {
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -6491,10 +6487,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -6551,8 +6543,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -6597,10 +6593,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -6668,8 +6660,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -6702,10 +6698,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -6765,8 +6757,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -6904,10 +6900,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -6964,6 +6956,10 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
               "Cantidad": "2"
             },
@@ -7010,10 +7006,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -7081,8 +7073,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -7118,10 +7114,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -7178,8 +7170,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -7215,10 +7211,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -7275,8 +7267,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -7414,10 +7410,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -7474,6 +7466,10 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
               "Cantidad": "2"
             },
@@ -7508,10 +7504,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -7571,8 +7563,12 @@
               "Cantidad": "2"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -7622,10 +7618,6 @@
             {
               "Item": "INYECTORES POE (UND)",
               "Cantidad": "2"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
             },
             {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
@@ -7692,8 +7684,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -7738,10 +7734,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -7809,8 +7801,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -7956,10 +7952,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -8013,6 +8005,10 @@
             },
             {
               "Item": "BASES DE ANCLAJE PLANO (PAR)",
+              "Cantidad": "1"
+            },
+            {
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -8053,10 +8049,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -8113,6 +8105,10 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
               "Cantidad": "2"
             },
@@ -8147,10 +8143,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -8207,6 +8199,10 @@
             },
             {
               "Item": "BASES DE ANCLAJE ANGULAR (PAR)",
+              "Cantidad": "1"
+            },
+            {
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -8247,10 +8243,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -8304,6 +8296,10 @@
             },
             {
               "Item": "BASES DE ANCLAJE ANGULAR (PAR)",
+              "Cantidad": "1"
+            },
+            {
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -8434,10 +8430,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -8491,6 +8483,10 @@
             },
             {
               "Item": "BASES DE ANCLAJE ANGULAR (PAR)",
+              "Cantidad": "1"
+            },
+            {
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -8619,10 +8615,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -8659,10 +8651,6 @@
               "Cantidad": "5"
             },
             {
-              "Item": "CABLE ETHERNET (M)",
-              "Cantidad": "5"
-            },
-            {
               "Item": "CABLE ELECTRICO (M)",
               "Cantidad": "4"
             },
@@ -8679,8 +8667,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -8716,10 +8708,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -8756,10 +8744,6 @@
               "Cantidad": "5"
             },
             {
-              "Item": "CABLE ETHERNET (M)",
-              "Cantidad": "5"
-            },
-            {
               "Item": "CABLE ELECTRICO (M)",
               "Cantidad": "4"
             },
@@ -8773,6 +8757,10 @@
             },
             {
               "Item": "BASES DE ANCLAJE ANGULAR (PAR)",
+              "Cantidad": "1"
+            },
+            {
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -8813,10 +8801,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -8873,6 +8857,10 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
               "Cantidad": "2"
             },
@@ -8907,10 +8895,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -8970,6 +8954,10 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
               "Cantidad": "2"
             },
@@ -8987,11 +8975,11 @@
         },
         {
           "Item": "SWITCH WI-TEK (UND)",
-          "Cantidad": "4"
+          "Cantidad": "2"
         },
         {
           "Item": "FUENTE DE PODER DEL SWITCH WI-TEK (UND)",
-          "Cantidad": "4"
+          "Cantidad": "2"
         },
         {
           "Item": "INYECTORES POE (UND)",
@@ -9039,7 +9027,7 @@
         },
         {
           "Item": "CABLE ETHERNET (M)",
-          "Cantidad": "20"
+          "Cantidad": "10"
         },
         {
           "Item": "CABLE ELECTRICO (M)",
@@ -9097,10 +9085,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -9157,8 +9141,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -9191,10 +9179,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -9254,6 +9238,10 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
               "Cantidad": "2"
             },
@@ -9305,10 +9293,6 @@
             {
               "Item": "INYECTORES POE (UND)",
               "Cantidad": "2"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
             },
             {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
@@ -9375,8 +9359,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -9409,10 +9397,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -9469,6 +9453,10 @@
             },
             {
               "Item": "BASES DE ANCLAJE ANGULAR (PAR)",
+              "Cantidad": "1"
+            },
+            {
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -9619,10 +9607,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -9679,6 +9663,10 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
               "Cantidad": "2"
             },
@@ -9725,10 +9713,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -9796,8 +9780,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -9830,10 +9818,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -9893,6 +9877,10 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
               "Cantidad": "2"
             },
@@ -9944,10 +9932,6 @@
             {
               "Item": "INYECTORES POE (UND)",
               "Cantidad": "2"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
             },
             {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
@@ -10014,8 +9998,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -10161,10 +10149,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -10221,6 +10205,10 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
               "Cantidad": "2"
             },
@@ -10272,10 +10260,6 @@
             {
               "Item": "INYECTORES POE (UND)",
               "Cantidad": "2"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
             },
             {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
@@ -10342,8 +10326,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -10376,10 +10364,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -10439,6 +10423,10 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
               "Cantidad": "2"
             },
@@ -10490,10 +10478,6 @@
             {
               "Item": "INYECTORES POE (UND)",
               "Cantidad": "2"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
             },
             {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
@@ -10564,8 +10548,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -10731,10 +10719,6 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -10799,8 +10783,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "3"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "6"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -10845,10 +10833,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -10916,8 +10900,12 @@
               "Cantidad": "2"
             },
             {
-              "Item": "PATCHORE CAT 6A (UN)",
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "2"
+            },
+            {
+              "Item": "PATCHORE CAT 6A (UN)",
+              "Cantidad": "4"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -10950,10 +10938,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -11013,8 +10997,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
@@ -11047,10 +11035,6 @@
             },
             {
               "Item": "INYECTORES POE (UND)",
-              "Cantidad": "1"
-            },
-            {
-              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -11107,6 +11091,10 @@
             },
             {
               "Item": "BASES DE ANCLAJE ANGULAR (PAR)",
+              "Cantidad": "1"
+            },
+            {
+              "Item": "PARARRAYOS ETHERNET (UND)",
               "Cantidad": "1"
             },
             {
@@ -11261,10 +11249,6 @@
               "Cantidad": "1"
             },
             {
-              "Item": "PARARRAYOS ETHERNET (UND)",
-              "Cantidad": "1"
-            },
-            {
               "Item": "LLAVES TERMOMAGNETICAS (UND)",
               "Cantidad": "1"
             },
@@ -11321,8 +11305,12 @@
               "Cantidad": "1"
             },
             {
+              "Item": "PARARRAYOS ETHERNET (UND)",
+              "Cantidad": "1"
+            },
+            {
               "Item": "PATCHORE CAT 6A (UN)",
-              "Cantidad": "2"
+              "Cantidad": "3"
             },
             {
               "Item": "PILOTO LED VERDE Y ROJO (PAR)",
