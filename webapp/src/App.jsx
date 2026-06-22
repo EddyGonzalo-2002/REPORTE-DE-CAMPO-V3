@@ -659,14 +659,28 @@ const App = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data: puntos, error: pErr } = await supabase.from('puntos_instalacion').select('*').order('id', { ascending: true });
-      const { data: materiales, error: mErr } = await supabase.from('materiales_punto').select('*');
-      
-      if (pErr || mErr) {
-        console.error("Error fetching data:", pErr, mErr);
-        setLoading(false);
-        return;
-      }
+      // Función para obtener todos los registros manejando la paginación de Supabase (>1000)
+      const fetchAllRows = async (table) => {
+        let allData = [];
+        let from = 0;
+        const step = 1000;
+        let hasMore = true;
+        while (hasMore) {
+          const { data, error } = await supabase.from(table).select('*').range(from, from + step - 1).order('id', { ascending: true });
+          if (error) throw error;
+          if (data && data.length > 0) {
+            allData = [...allData, ...data];
+            from += step;
+          }
+          if (!data || data.length < step) {
+            hasMore = false;
+          }
+        }
+        return allData;
+      };
+
+      const puntos = await fetchAllRows('puntos_instalacion');
+      const materiales = await fetchAllRows('materiales_punto');
 
       const newData = {};
       puntos.forEach(p => {
