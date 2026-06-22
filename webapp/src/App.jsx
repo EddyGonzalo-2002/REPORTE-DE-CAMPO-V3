@@ -954,7 +954,7 @@ const App = () => {
               <div className="sidebar-section" style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem', marginTop: 'auto' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <span style={{ fontSize: '0.8rem', color: 'var(--success)' }}>Sesión: {session.user.email}</span>
-                  <button onClick={handleLogout} className="reset-btn-full" style={{ background: 'var(--error)', borderColor: 'var(--error)' }}>
+                  <button onClick={handleLogout} className="reset-btn-full" style={{ background: 'transparent', borderColor: 'var(--error)', color: 'var(--error)' }}>
                     <LogOut size={16} /> Cerrar Sesión
                   </button>
                 </div>
