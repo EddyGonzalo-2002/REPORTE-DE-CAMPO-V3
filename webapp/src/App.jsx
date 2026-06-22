@@ -376,13 +376,24 @@ const AdminDashboard = ({ data }) => {
   let totalCompletados = 0;
   let totalAsignados = 0;
 
+  let ptzCompletadas = 0;
+  let multiCompletadas = 0;
+  let altavocesCompletados = 0;
+
   Object.keys(data).forEach(cuadrilla => {
     let completados = 0;
     let asignados = 0;
     Object.keys(data[cuadrilla]).forEach(sector => {
        const inst = data[cuadrilla][sector].Instalaciones || [];
        asignados += inst.length;
-       completados += inst.filter(i => i.completado).length;
+       inst.forEach(i => {
+         if (i.completado) {
+           completados++;
+           if (i['CAMARA PTZ'] && i['CAMARA PTZ'] !== '0') ptzCompletadas++;
+           if (i['CAMARA MULTISENSOR'] && i['CAMARA MULTISENSOR'] !== '0') multiCompletadas++;
+           if (i['ALTAVOZ IP'] && i['ALTAVOZ IP'] !== '0') altavocesCompletados++;
+         }
+       });
     });
     totalCompletados += completados;
     totalAsignados += asignados;
@@ -405,7 +416,7 @@ const AdminDashboard = ({ data }) => {
         <p style={{ color: 'var(--text-muted)' }}>Vista global de avances por cuadrilla y estado del proyecto.</p>
       </div>
 
-      <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: '2rem' }}>
+      <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: '1rem' }}>
         <div className="kpi-card" style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))', borderColor: 'rgba(59, 130, 246, 0.3)' }}>
           <div className="kpi-icon" style={{color: 'var(--primary)'}}><Award size={32}/></div>
           <div className="kpi-info">
@@ -422,7 +433,32 @@ const AdminDashboard = ({ data }) => {
         </div>
       </div>
 
-      <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)' }}>Ranking de Cuadrillas</h3>
+      <h3 style={{ marginBottom: '1rem', color: 'var(--text-main)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Equipos Instalados</h3>
+      <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: '2rem' }}>
+        <div className="kpi-card" style={{ padding: '1rem' }}>
+          <div className="kpi-icon" style={{color: 'var(--c-ptz)'}}><Camera size={20}/></div>
+          <div className="kpi-info">
+            <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{ptzCompletadas}</span>
+            <span className="kpi-lbl">PTZ Instaladas</span>
+          </div>
+        </div>
+        <div className="kpi-card" style={{ padding: '1rem' }}>
+          <div className="kpi-icon" style={{color: 'var(--c-multi)'}}><Video size={20}/></div>
+          <div className="kpi-info">
+            <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{multiCompletadas}</span>
+            <span className="kpi-lbl">Multi Instaladas</span>
+          </div>
+        </div>
+        <div className="kpi-card" style={{ padding: '1rem' }}>
+          <div className="kpi-icon" style={{color: 'var(--c-altavoz)'}}><Volume2 size={20}/></div>
+          <div className="kpi-info">
+            <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{altavocesCompletados}</span>
+            <span className="kpi-lbl">Altavoces IP</span>
+          </div>
+        </div>
+      </div>
+
+      <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.9rem' }}>Ranking de Cuadrillas</h3>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {rankings.map((r, i) => (
           <div key={i} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', padding: '1.5rem', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
