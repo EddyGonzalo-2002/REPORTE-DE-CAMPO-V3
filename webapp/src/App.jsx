@@ -3,9 +3,9 @@ import {
   ChevronDown, MapPin, Package, CalendarDays, Camera, 
   Video, Volume2, ShieldAlert, Wifi, Link2, Layers, 
   HardHat, Box, Cable, Zap, Server, Filter, Activity,
-  Target, Menu, X, Navigation, Sun, Moon
+  Target, Menu, X, Navigation, Sun, Moon, CheckSquare, Square, LogIn, LogOut
 } from 'lucide-react';
-import data from './data.json';
+import { supabase } from './supabaseClient';
 
 const getMaterialIcon = (name) => {
   const n = name.toLowerCase();
@@ -32,19 +32,32 @@ const getPuntoName = (loc) => {
   return `${loc['DESTINO ESP.']} - Frente ${loc['FRENTE']}`;
 };
 
-const LocationCard = ({ loc, dayLabel }) => {
+const LocationCard = ({ loc, dayLabel, session, onToggleCompletado }) => {
   const [showLogistica, setShowLogistica] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   
   const ptz = loc['CAMARA PTZ'];
   const multi = loc['CAMARA MULTISENSOR'];
   const altavoz = loc['ALTAVOZ IP'];
   const boton = loc['BOTON DE PANICO'];
   const estado = loc['ESTADO OPERATIVO']?.toUpperCase();
+  const isAdmin = session?.user?.role === 'authenticated'; // Or check a specific email/role
 
   const visibleMaterials = loc.MaterialesPunto || [];
 
+  const handleToggle = async () => {
+    if (!session) return;
+    setIsUpdating(true);
+    await onToggleCompletado(loc.id, !loc.completado);
+    setIsUpdating(false);
+  };
+
+  const mapLink = loc.Latitud && loc.Longitud ? `https://maps.google.com/maps?q=${loc.Latitud},${loc.Longitud}` : '';
+  const waText = encodeURIComponent(`Hola, este es el punto *${getPuntoName(loc)}* (${loc['DESTINO ESP.']}).\n📍 Ubicación: ${mapLink}`);
+  const waLink = `https://wa.me/?text=${waText}`;
+
   return (
-    <div className="location-card">
+    <div className={`location-card ${loc.completado ? 'completed' : ''}`} style={{ opacity: loc.completado ? 0.7 : 1 }}>
       <div className="loc-card-header">
         <div className="loc-destino">
           <span className="destino-lbl">Punto: {getPuntoName(loc)}</span>
@@ -75,19 +88,34 @@ const LocationCard = ({ loc, dayLabel }) => {
         </div>
       </div>
 
-      {loc.Latitud && loc.Longitud && (
-        <div style={{ padding: '0 1rem 1rem 1rem' }}>
+      <div style={{ padding: '0 1rem 1rem 1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        {loc.Latitud && loc.Longitud && (
           <a 
-            href={`https://maps.google.com/maps?daddr=${loc.Latitud},${loc.Longitud}+(${encodeURIComponent('Punto ' + getPuntoName(loc) + ' - ' + (loc['DESTINO ESP.'] || ''))})`}
+            href={waLink}
             target="_blank"
             rel="noopener noreferrer"
             className="map-nav-btn"
+            style={{ background: '#25D366', color: '#fff', border: 'none' }}
           >
             <Navigation size={16} />
-            Cómo llegar
+            Compartir WhatsApp
           </a>
-        </div>
-      )}
+        )}
+        
+        <button 
+          onClick={handleToggle}
+          disabled={!session || isUpdating}
+          className="map-nav-btn"
+          style={{ 
+            background: loc.completado ? 'var(--c-ptz)' : 'var(--overlay-w-10)', 
+            cursor: session ? 'pointer' : 'not-allowed',
+            opacity: session ? 1 : 0.5
+          }}
+        >
+          {loc.completado ? <CheckSquare size={16} /> : <Square size={16} />}
+          {isUpdating ? 'Guardando...' : loc.completado ? 'Completado' : 'Marcar Completado'}
+        </button>
+      </div>
 
       {visibleMaterials.length > 0 && (
         <div className="loc-materials-container">
@@ -175,10 +203,24 @@ const SectorGlobalLogistics = ({ materiales }) => {
 };
 
 const App = () => {
-  const [activeCuadrilla, setActiveCuadrilla] = useState('CUADRILLA-03-L');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState(null);
+
+  const [activeCuadrilla, setActiveCuadrilla] = useState('');
   const [expandedSector, setExpandedSector] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+
+  // Filters state
+  const [filterSector, setFilterSector] = useState('ALL');
+  const [filterEquipo, setFilterEquipo] = useState('ALL');
+  const [filterFecha, setFilterFecha] = useState('ALL');
+  const [filterPunto, setFilterPunto] = useState('ALL');
+
+  // Login Form State
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -186,19 +228,95 @@ const App = () => {
   }, [theme]);
 
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  
-  // Filters state
-  const [filterSector, setFilterSector] = useState('ALL');
-  const [filterEquipo, setFilterEquipo] = useState('ALL');
-  const [filterFecha, setFilterFecha] = useState('ALL');
-  const [filterPunto, setFilterPunto] = useState('ALL');
 
-  const cuadrillas = Object.keys(data);
-  const currentData = data[activeCuadrilla];
-  const allSectors = Object.keys(currentData).sort();
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
 
-  // Compute global dates mapping to "Día 1, Día 2..."
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const { data: puntos, error: pErr } = await supabase.from('puntos_instalacion').select('*').order('id', { ascending: true });
+      const { data: materiales, error: mErr } = await supabase.from('materiales_punto').select('*');
+      
+      if (pErr || mErr) {
+        console.error("Error fetching data:", pErr, mErr);
+        setLoading(false);
+        return;
+      }
+
+      const newData = {};
+      puntos.forEach(p => {
+        if (!newData[p.cuadrilla]) newData[p.cuadrilla] = {};
+        if (!newData[p.cuadrilla][p.sector]) newData[p.cuadrilla][p.sector] = { Instalaciones: [], Materiales: [] };
+        
+        const mats = materiales.filter(m => m.punto_id === p.id).map(m => ({ Item: m.item, Cantidad: m.cantidad }));
+        
+        newData[p.cuadrilla][p.sector].Instalaciones.push({
+          id: p.id,
+          'DESTINO ESP.': p.destino_esp,
+          'FRENTE': p.frente,
+          'CAMARA PTZ': p.camara_ptz,
+          'CAMARA MULTISENSOR': p.camara_multisensor,
+          'ALTAVOZ IP': p.altavoz_ip,
+          'BOTON DE PANICO': p.boton_panico,
+          'MATERIAL BASE': p.material_base,
+          'METODO DE ANCLAJE': p.metodo_anclaje,
+          'MEDIO DE COMUNICACION': p.medio_comunicacion,
+          'ESTADO OPERATIVO': p.estado_operativo,
+          Latitud: p.latitud,
+          Longitud: p.longitud,
+          'FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO': p.dia_programado,
+          completado: p.completado,
+          MaterialesPunto: mats
+        });
+      });
+      
+      setData(newData);
+      const cuadrillas = Object.keys(newData).sort();
+      if (cuadrillas.length > 0) setActiveCuadrilla(cuadrillas[0]);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  };
+
+  const handleToggleCompletado = async (id, nuevoEstado) => {
+    const { error } = await supabase.from('puntos_instalacion').update({ completado: nuevoEstado }).eq('id', id);
+    if (!error) {
+      fetchData(); // Recargar datos para actualizar la UI, o modificar estado local
+    } else {
+      alert("Error al actualizar: " + error.message);
+    }
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) alert(error.message);
+    else { setEmail(''); setPassword(''); }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const currentData = data && activeCuadrilla ? data[activeCuadrilla] : {};
+  const allSectors = currentData ? Object.keys(currentData).sort() : [];
+  const cuadrillas = data ? Object.keys(data).sort() : [];
+
   const dateToDayIndex = useMemo(() => {
+    if (!data) return {};
     const dates = new Set();
     Object.values(data).forEach(cuadrillaData => {
       Object.values(cuadrillaData).forEach(sectorData => {
@@ -210,9 +328,8 @@ const App = () => {
     });
     const sortedDates = Array.from(dates).sort();
     return Object.fromEntries(sortedDates.map((d, i) => [d, `Día ${i + 1}`]));
-  }, []);
+  }, [data]);
 
-  // Compute filtered data, KPI stats, and dynamic available options for faceted search
   const { 
     filteredSectors, 
     stats, 
@@ -221,6 +338,8 @@ const App = () => {
     availableEquipos, 
     availableFechas 
   } = useMemo(() => {
+    if (!data || !currentData) return { filteredSectors: {}, stats: {}, availableSectors: [], availablePuntos: [], availableEquipos: [], availableFechas: [] };
+
     let statLocs = 0;
     let statPtz = 0;
     let statMulti = 0;
@@ -259,7 +378,6 @@ const App = () => {
           
         const puntoPasses = filterPunto === 'ALL' || punto === filterPunto;
 
-        // Populate available options based on OTHER active filters (Faceted Search Logic)
         if (equipoPasses && fechaPasses && puntoPasses) aSectors.add(sector);
         if (sectorPasses && fechaPasses && equipoPasses) aPuntos.add(punto);
         if (sectorPasses && puntoPasses && fechaPasses) {
@@ -301,24 +419,21 @@ const App = () => {
       availableSectors: Array.from(aSectors).sort(),
       availablePuntos: Array.from(aPuntos).sort(),
       availableEquipos: Array.from(aEquipos).sort(),
-      // Sort days by their numeric value instead of alphabetically
       availableFechas: Array.from(aFechas).sort((a, b) => {
         const numA = parseInt(a.replace('Día ', ''));
         const numB = parseInt(b.replace('Día ', ''));
         return numA - numB;
       })
     };
-  }, [activeCuadrilla, filterSector, filterEquipo, filterFecha, filterPunto, currentData, allSectors, dateToDayIndex]);
+  }, [data, activeCuadrilla, filterSector, filterEquipo, filterFecha, filterPunto, currentData, allSectors, dateToDayIndex]);
 
   const displaySectors = Object.keys(filteredSectors).sort();
 
-  // Reset filter selections if they are no longer valid options
   useEffect(() => { if (filterSector !== 'ALL' && !availableSectors.includes(filterSector)) setFilterSector('ALL'); }, [availableSectors, filterSector]);
   useEffect(() => { if (filterPunto !== 'ALL' && !availablePuntos.includes(filterPunto)) setFilterPunto('ALL'); }, [availablePuntos, filterPunto]);
   useEffect(() => { if (filterEquipo !== 'ALL' && !availableEquipos.includes(filterEquipo)) setFilterEquipo('ALL'); }, [availableEquipos, filterEquipo]);
   useEffect(() => { if (filterFecha !== 'ALL' && !availableFechas.includes(filterFecha)) setFilterFecha('ALL'); }, [availableFechas, filterFecha]);
 
-  // Reset all filters when changing Cuadrilla
   useEffect(() => {
     setFilterSector('ALL');
     setFilterEquipo('ALL');
@@ -331,12 +446,14 @@ const App = () => {
     setExpandedSector(expandedSector === sector ? null : sector);
   };
 
+  if (loading && !data) {
+    return <div style={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center' }}>Cargando datos desde Supabase...</div>;
+  }
+
   return (
     <div className="app-layout">
-      {/* Mobile Overlay */}
       {isSidebarOpen && <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
 
-      {/* Sidebar */}
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <div className="header-brand">
@@ -375,6 +492,23 @@ const App = () => {
                 </span>
               </button>
             </div>
+          </div>
+
+          {/* LOGIN SECTION */}
+          <div className="sidebar-section" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
+            <h3 className="sidebar-title"><LogIn size={16} /> Acceso Administrador</h3>
+            {session ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--success)' }}>Sesión iniciada: {session.user.email}</span>
+                <button onClick={handleLogout} className="reset-btn-full" style={{ background: 'var(--error)' }}>Cerrar Sesión</button>
+              </div>
+            ) : (
+              <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-main)' }} required />
+                <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-main)' }} required />
+                <button type="submit" className="reset-btn-full" style={{ background: 'var(--primary)' }}>Ingresar</button>
+              </form>
+            )}
           </div>
 
           <div className="sidebar-section">
@@ -437,7 +571,6 @@ const App = () => {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="main-content">
         <header className="mobile-header">
           <button className="menu-btn" onClick={() => setIsSidebarOpen(true)}>
@@ -468,7 +601,6 @@ const App = () => {
         </header>
 
         <div className="main-scroll-area">
-          {/* KPI Stats Grid */}
           <div className="kpi-grid">
             <div className="kpi-card">
               <div className="kpi-icon" style={{color: 'var(--primary)'}}><MapPin size={24}/></div>
@@ -507,7 +639,6 @@ const App = () => {
             </div>
           </div>
 
-          {/* Sectors List */}
           <div className="sectors-container">
             {displaySectors.map(sector => {
               const sectorData = filteredSectors[sector];
@@ -538,7 +669,7 @@ const App = () => {
                           {instalaciones.map((loc, idx) => {
                             const dRaw = loc['FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO']?.split(' ')[0];
                             const dayLabel = dRaw && dRaw !== '-' ? dateToDayIndex[dRaw] : null;
-                            return <LocationCard key={idx} loc={loc} dayLabel={dayLabel} />;
+                            return <LocationCard key={idx} loc={loc} dayLabel={dayLabel} session={session} onToggleCompletado={handleToggleCompletado} />;
                           })}
                         </div>
                       </div>
