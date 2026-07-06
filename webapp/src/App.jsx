@@ -428,6 +428,7 @@ const AdminDashboard = ({ data }) => {
   let ptzCompletadas = 0;
   let multiCompletadas = 0;
   let altavocesCompletados = 0;
+  let botonesCompletados = 0;
   
   const observadosDetalle = [];
 
@@ -446,6 +447,7 @@ const AdminDashboard = ({ data }) => {
            if (i['CAMARA PTZ'] && i['CAMARA PTZ'] !== '0') ptzCompletadas++;
            if (i['CAMARA MULTISENSOR'] && i['CAMARA MULTISENSOR'] !== '0') multiCompletadas++;
            if (i['ALTAVOZ IP'] && i['ALTAVOZ IP'] !== '0') altavocesCompletados++;
+           if (i['BOTON DE PANICO'] && i['BOTON DE PANICO'] !== '0') botonesCompletados++;
          }
          if (i.observado) {
            totalObservados++;
@@ -525,6 +527,13 @@ const AdminDashboard = ({ data }) => {
           <div className="kpi-info">
             <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{altavocesCompletados}</span>
             <span className="kpi-lbl">Altavoces IP</span>
+          </div>
+        </div>
+        <div className="kpi-card" style={{ padding: '1rem' }}>
+          <div className="kpi-icon" style={{color: 'var(--c-boton)'}}><ShieldAlert size={20}/></div>
+          <div className="kpi-info">
+            <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{botonesCompletados}</span>
+            <span className="kpi-lbl">Botones Pánico</span>
           </div>
         </div>
       </div>
