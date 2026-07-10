@@ -135,7 +135,10 @@ export default function App() {
     fetchSectores();
   }, []);
 
-  const handleUpdatePunto = () => {
+  const handleUpdatePunto = async (id, updateData) => {
+    if (id && updateData) {
+      await supabase.from('puntos_instalacion').update(updateData).eq('id', id);
+    }
     fetchData();
   };
 
