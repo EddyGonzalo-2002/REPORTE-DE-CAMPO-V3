@@ -11,6 +11,7 @@ export const InventoryManager = () => {
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newItem, setNewItem] = useState({ item_name: '', stock_quantity: 0 });
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchInventory();
@@ -43,6 +44,18 @@ export const InventoryManager = () => {
     }
   };
 
+  const handleDelete = async (id, name) => {
+    if (window.confirm(`¿Seguro que deseas eliminar el ítem "${name}" del inventario?`)) {
+      const { error } = await supabase.from('inventory').delete().eq('id', id);
+      if (error) alert(error.message);
+      else fetchInventory();
+    }
+  };
+
+  const filteredInventory = inventory.filter(item => 
+    item.item_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
       <div className="responsive-header" style={{ marginBottom: '1.5rem' }}>
@@ -68,6 +81,17 @@ export const InventoryManager = () => {
         </button>
       </form>
 
+      <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', background: 'var(--bg-main)', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+        <Search size={18} color="var(--text-muted)" />
+        <input 
+          type="text" 
+          placeholder="Buscar ítem..." 
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          style={{ border: 'none', background: 'transparent', outline: 'none', color: 'var(--text-main)', flex: 1 }}
+        />
+      </div>
+
       {loading ? (
         <div className="empty-state">
           <Package size={48} opacity={0.2} />
@@ -84,15 +108,18 @@ export const InventoryManager = () => {
             </tr>
           </thead>
           <tbody>
-            {inventory.map(item => (
+            {filteredInventory.map(item => (
               <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
                 <td style={{ padding: '1rem' }}>{item.item_name}</td>
                 <td style={{ padding: '1rem' }}>
-                  <span style={{ fontWeight: 600, color: item.stock_quantity <= 5 ? 'var(--error)' : 'var(--text-main)' }}>{item.stock_quantity}</span>
+                  <span style={{ fontWeight: 600, color: item.stock_quantity === 0 ? 'var(--error)' : 'var(--text-main)' }}>{item.stock_quantity}</span>
                 </td>
-                <td style={{ padding: '1rem' }}>
+                <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
                   <button onClick={() => handleUpdate(item.id, item.stock_quantity)} className="splash-btn secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid var(--border-light)' }}>
                     <Edit2 size={14} /> Actualizar
+                  </button>
+                  <button onClick={() => handleDelete(item.id, item.item_name)} className="splash-btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid var(--error)', color: 'var(--error)', background: 'transparent' }}>
+                    <Trash2 size={14} /> Eliminar
                   </button>
                 </td>
               </tr>
