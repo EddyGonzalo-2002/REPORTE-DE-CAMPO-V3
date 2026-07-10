@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Camera, Video, Volume2, ShieldAlert, Wifi, Link2, Layers, HardHat, Package, ChevronDown, Map, Navigation, CheckSquare, Square, AlertTriangle, Download } from 'lucide-react';
-import { getMaterialIcon, getPuntoName } from '../utils/helpers';
+import { Camera, Video, Volume2, ShieldAlert, Wifi, Link2, Layers, HardHat, Package, ChevronDown, Map, Navigation, CheckSquare, Square, AlertTriangle, Download, Image as ImageIcon, Loader } from 'lucide-react';
+import { getMaterialIcon, getPuntoName, compressImageToWebp } from '../utils/helpers';
+import { supabase } from '../supabaseClient';
 
 export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaGlobal, isCompact = false }) => {
   const [showLogistica, setShowLogistica] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isUploadingFoto, setIsUploadingFoto] = useState(false);
+  const fileInputRef = useRef(null);
   
   const ptz = loc.camara_ptz;
   const multi = loc.camara_multisensor;
@@ -71,6 +74,48 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
   const waText = encodeURIComponent(`Hola, este es el punto *${getPuntoName(loc)}* (${loc.destino_esp}).\n📍 Ubicación: ${mapLink}`);
   const waLink = `https://wa.me/?text=${waText}`;
 
+  const handleFotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !session) return;
+    
+    setIsUploadingFoto(true);
+    try {
+      // 1. Comprimir a WebP
+      const webpBlob = await compressImageToWebp(file, 800, 0.7);
+      
+      // 2. Crear nombre de archivo único
+      const fileName = `punto_${loc.id}_${Date.now()}.webp`;
+      
+      // 3. Subir a Supabase Storage (bucket "fotos")
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('fotos')
+        .upload(fileName, webpBlob, {
+          contentType: 'image/webp',
+          upsert: true
+        });
+        
+      if (uploadError) throw uploadError;
+      
+      // 4. Obtener URL pública
+      const { data: publicUrlData } = supabase.storage
+        .from('fotos')
+        .getPublicUrl(fileName);
+        
+      const fotoUrl = publicUrlData.publicUrl;
+      
+      // 5. Actualizar la base de datos
+      await onUpdatePunto(loc.id, { foto_url: fotoUrl });
+      alert("¡Foto subida y guardada exitosamente!");
+      
+    } catch (error) {
+      console.error("Error al subir foto:", error);
+      alert("Error al subir la foto. Asegúrate de que el bucket 'fotos' exista y tenga permisos públicos.");
+    } finally {
+      setIsUploadingFoto(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   let cardStatusClass = '';
   if (loc.observado) cardStatusClass = 'observado';
   else if (loc.completado) cardStatusClass = 'completed';
@@ -79,9 +124,23 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
     <div className={`location-card ${cardStatusClass}`} style={{ 
       opacity: (loc.completado || loc.observado) ? 0.8 : 1,
       borderColor: loc.observado ? 'rgba(239, 68, 68, 0.4)' : undefined,
-      boxShadow: loc.observado ? '0 4px 20px rgba(239, 68, 68, 0.1)' : undefined
+      boxShadow: loc.observado ? '0 4px 20px rgba(239, 68, 68, 0.1)' : undefined,
+      overflow: 'hidden'
     }}>
-      <div className="loc-card-header">
+      
+      {/* Banner de Foto */}
+      {loc.foto_url && (
+        <div style={{
+          width: '100%',
+          height: isCompact ? '120px' : '200px',
+          backgroundImage: `url(${loc.foto_url})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          borderBottom: '1px solid var(--border-light)'
+        }} />
+      )}
+
+      <div className="loc-card-header" style={{ paddingTop: loc.foto_url ? '1rem' : undefined }}>
         <div className="loc-destino">
           <span className="destino-lbl">Punto: {getPuntoName(loc)}</span>
           <h4>{loc.destino_esp}</h4>
@@ -121,17 +180,26 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
       )}
 
       <div className="loc-actions" style={{ 
-        display: 'grid', 
+        display: 'flex', 
+        flexWrap: 'wrap',
         gap: '0.75rem', 
-        gridTemplateColumns: isCompact ? 'repeat(4, 1fr)' : 'repeat(auto-fit, minmax(140px, 1fr))',
+        justifyContent: isCompact ? 'space-between' : 'flex-start',
         alignItems: 'center'
       }}>
+        <input 
+          type="file" 
+          accept="image/*" 
+          ref={fileInputRef} 
+          style={{ display: 'none' }} 
+          onChange={handleFotoUpload}
+        />
+
         <a 
           href={mapLink}
           target="_blank"
           rel="noopener noreferrer"
           className="map-nav-btn"
-          style={{ background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-light)', textDecoration: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.4rem', padding: isCompact ? '0.5rem' : '0.75rem 1rem' }}
+          style={{ background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-light)', textDecoration: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.4rem', padding: isCompact ? '0.5rem' : '0.75rem 1rem', flex: isCompact ? '1' : 'auto' }}
           title="Cómo Llegar"
         >
           <Navigation size={16} /> {!isCompact && 'Cómo Llegar'}
@@ -154,7 +222,7 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
           target="_blank"
           rel="noopener noreferrer"
           className="map-nav-btn"
-          style={{ background: '#25D366', color: '#fff', border: 'none', textDecoration: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.4rem', padding: isCompact ? '0.5rem' : '0.75rem 1rem' }}
+          style={{ background: '#25D366', color: '#fff', border: 'none', textDecoration: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.4rem', padding: isCompact ? '0.5rem' : '0.75rem 1rem', flex: isCompact ? '1' : 'auto' }}
           title="WhatsApp"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
@@ -178,7 +246,8 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
                 justifyContent: 'center',
                 alignItems: 'center',
                 gap: '0.4rem',
-                padding: isCompact ? '0.5rem' : '0.75rem 1rem'
+                padding: isCompact ? '0.5rem' : '0.75rem 1rem',
+                flex: isCompact ? '1' : 'auto'
               }}
               title={loc.completado ? 'Completado' : 'Marcar Completado'}
             >
@@ -199,12 +268,35 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
                 justifyContent: 'center',
                 alignItems: 'center',
                 gap: '0.4rem',
-                padding: isCompact ? '0.5rem' : '0.75rem 1rem'
+                padding: isCompact ? '0.5rem' : '0.75rem 1rem',
+                flex: isCompact ? '1' : 'auto'
               }}
               title={loc.observado ? 'Observado (Desmarcar)' : 'Marcar Observado'}
             >
               <AlertTriangle size={16} />
               {!isCompact && (isUpdating ? '...' : loc.observado ? 'Observado (Desmarcar)' : 'Marcar Observado')}
+            </button>
+            
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingFoto}
+              className="map-nav-btn"
+              style={{ 
+                background: 'var(--overlay-w-10)', 
+                cursor: 'pointer',
+                border: '1px solid var(--border-light)', 
+                color: 'var(--text-main)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: isCompact ? '0.5rem' : '0.75rem 1rem',
+                flex: isCompact ? '1' : 'auto'
+              }}
+              title="Subir Foto"
+            >
+              {isUploadingFoto ? <Loader size={16} className="spin" /> : <ImageIcon size={16} />}
+              {!isCompact && (isUploadingFoto ? 'Subiendo...' : 'Subir Foto')}
             </button>
           </>
         )}
