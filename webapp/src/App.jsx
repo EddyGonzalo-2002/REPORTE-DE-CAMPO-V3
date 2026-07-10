@@ -4,7 +4,7 @@ import {
   ChevronDown, MapPin, Package, CalendarDays, Camera, 
   Video, Volume2, ShieldAlert, Wifi, Link2, Layers, 
   HardHat, Box, Cable, Zap, Server, Filter, Activity,
-  Target, Menu, X, Navigation, Sun, Moon, CheckSquare, Square, LogOut, Download, Map, BarChart2, Award, Search, AlertTriangle, Users
+  Target, Menu, X, Navigation, Sun, Moon, CheckSquare, Square, LogOut, LogIn, Download, Map, BarChart2, Award, Search, AlertTriangle, Users
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { SplashScreen } from './components/SplashScreen';
@@ -257,14 +257,16 @@ export default function App() {
                           {Array.from(new Set(Object.values(data).filter(loc => loc.cuadrilla === activeCuadrilla).map(p => p.sector).filter(Boolean))).map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                       </div>
-                      <div className="filter-group">
-                        <select value={filterEquipo} onChange={(e) => setFilterEquipo(e.target.value)} className="splash-input" style={{ width: '100%', padding: '0.4rem', fontSize: '0.8rem' }}>
-                          <option value="ALL">Cualquier Estado</option>
-                          <option value="COMPLETADOS">Completados</option>
-                          <option value="OBSERVADOS">Con Observaciones</option>
-                          <option value="PENDIENTES">Pendientes</option>
-                        </select>
-                      </div>
+                      {session && (
+                        <div className="filter-group">
+                          <select value={filterEquipo} onChange={(e) => setFilterEquipo(e.target.value)} className="splash-input" style={{ width: '100%', padding: '0.4rem', fontSize: '0.8rem' }}>
+                            <option value="ALL">Cualquier Estado</option>
+                            <option value="COMPLETADOS">Completados</option>
+                            <option value="OBSERVADOS">Con Observaciones</option>
+                            <option value="PENDIENTES">Pendientes</option>
+                          </select>
+                        </div>
+                      )}
                       <div className="filter-group">
                         <select value={filterFecha} onChange={(e) => setFilterFecha(e.target.value)} className="splash-input" style={{ width: '100%', padding: '0.4rem', fontSize: '0.8rem' }}>
                           <option value="ALL">Cualquier Día</option>
@@ -300,10 +302,14 @@ export default function App() {
             </div>
           )}
           
-          {session && (
+          {session ? (
             <button className="cuadrilla-nav-btn" onClick={() => supabase.auth.signOut()} style={{ color: 'var(--error)', justifyContent: 'center' }}>
               <LogOut size={18} /> Cerrar Sesión
             </button>
+          ) : (
+            <NavLink to="/" className="cuadrilla-nav-btn" onClick={() => setIsSidebarOpen(false)} style={{ color: 'var(--primary)', justifyContent: 'center' }}>
+              <LogIn size={18} /> Iniciar Sesión
+            </NavLink>
           )}
         </div>
       </div>

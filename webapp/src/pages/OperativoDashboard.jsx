@@ -59,7 +59,14 @@ export const OperativoDashboard = ({ data, session, onUpdatePunto, cuadrillasMap
         if (filterPunto === 'MULTI' && (!loc.camara_multisensor || loc.camara_multisensor === '0')) return false;
         if (filterPunto === 'ALTAVOZ' && (!loc.altavoz_ip || loc.altavoz_ip === '0')) return false;
       }
-      if (filterEquipo !== 'ALL') {
+      
+      // Guest restriction: only show pending points
+      if (!session && (loc.completado || loc.observado)) {
+        return false;
+      }
+
+      // Admin filter
+      if (session && filterEquipo !== 'ALL') {
         if (filterEquipo === 'COMPLETADOS' && !loc.completado) return false;
         if (filterEquipo === 'OBSERVADOS' && !loc.observado) return false;
         if (filterEquipo === 'PENDIENTES' && (loc.completado || loc.observado)) return false;
