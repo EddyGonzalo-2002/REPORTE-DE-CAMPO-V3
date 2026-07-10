@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon } from 'react-leaflet';
 import L from 'leaflet';
 import { point, featureCollection, convex, clustersKmeans, buffer, lineString } from '@turf/turf';
-import { Eye, EyeOff, Activity, BrainCircuit, Search } from 'lucide-react';
+import { Eye, EyeOff, Activity, BrainCircuit, Search, ChevronDown } from 'lucide-react';
 import { LocationCard } from '../components/LocationCard';
 import { getPuntoName } from '../utils/helpers';
 import { SectorGlobalLogistics } from '../components/SectorGlobalLogistics';
@@ -62,6 +62,7 @@ function recursiveBisection(points, maxCapacity) {
 export const AdminMapDashboard = ({ data, onUpdatePunto, fetchData, cuadrillasMap, sectoresList, sectoresMap }) => {
   const [showPolygons, setShowPolygons] = useState(true);
   const [selectedSectorFilter, setSelectedSectorFilter] = useState('ALL');
+  const [showSectorDropdown, setShowSectorDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [clusteringMode, setClusteringMode] = useState(false);
   const [clusterConfigType, setClusterConfigType] = useState('pts_per_cluster');
@@ -226,18 +227,58 @@ export const AdminMapDashboard = ({ data, onUpdatePunto, fetchData, cuadrillasMa
       </div>
 
       <div style={{ position: 'absolute', top: 15, right: 15, zIndex: 1000, display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 'calc(100% - 320px)' }}>
-        <select 
-          value={selectedSectorFilter}
-          onChange={(e) => setSelectedSectorFilter(e.target.value)}
-          style={{
-            padding: '0.6rem 1rem', background: 'var(--bg-main)', color: 'var(--text-main)',
-            border: '1px solid var(--border-light)', borderRadius: '12px', cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)', fontWeight: 600, fontSize: '0.9rem'
-          }}
-        >
-          <option value="ALL">Todos los Sectores</option>
-          {sectoresList.map(s => <option key={s.id} value={s.internal_name}>{s.display_name}</option>)}
-        </select>
+        
+        {/* Custom Sector Dropdown */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowSectorDropdown(!showSectorDropdown)}
+            style={{
+              padding: '0.6rem 1rem', background: 'var(--bg-main)', color: 'var(--text-main)',
+              border: '1px solid var(--border-light)', borderRadius: '12px', cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)', fontWeight: 600, fontSize: '0.9rem',
+              display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '160px', justifyContent: 'space-between'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {selectedSectorFilter !== 'ALL' && (
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: sectoresMap[selectedSectorFilter]?.color || '#3b82f6' }} />
+              )}
+              {selectedSectorFilter === 'ALL' ? 'Todos los Sectores' : sectoresMap[selectedSectorFilter]?.display_name || selectedSectorFilter}
+            </div>
+            <ChevronDown size={16} />
+          </button>
+          
+          {showSectorDropdown && (
+            <div style={{
+              position: 'absolute', top: 'calc(100% + 5px)', left: 0, width: '100%',
+              background: 'var(--bg-main)', border: '1px solid var(--border-light)', borderRadius: '12px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 1001, display: 'flex', flexDirection: 'column'
+            }}>
+              <div 
+                onClick={() => { setSelectedSectorFilter('ALL'); setShowSectorDropdown(false); }}
+                style={{ padding: '0.6rem 1rem', cursor: 'pointer', color: 'var(--text-main)', fontWeight: selectedSectorFilter === 'ALL' ? 700 : 500, background: selectedSectorFilter === 'ALL' ? 'var(--bg-card)' : 'transparent' }}
+              >
+                Todos los Sectores
+              </div>
+              {sectoresList.map(s => (
+                <div 
+                  key={s.id} 
+                  onClick={() => { setSelectedSectorFilter(s.internal_name); setShowSectorDropdown(false); }}
+                  style={{ 
+                    padding: '0.6rem 1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    color: 'var(--text-main)', fontWeight: selectedSectorFilter === s.internal_name ? 700 : 500,
+                    background: selectedSectorFilter === s.internal_name ? 'var(--bg-card)' : 'transparent',
+                    borderTop: '1px solid var(--border-light)'
+                  }}
+                >
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: s.color || '#3b82f6' }} />
+                  {s.display_name}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <button 
           onClick={() => setShowPolygons(!showPolygons)} 
           style={{
