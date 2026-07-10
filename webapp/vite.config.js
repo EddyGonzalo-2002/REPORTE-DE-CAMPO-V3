@@ -4,5 +4,5 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: './', // Ensures relative paths, making it work instantly on GitHub Pages
+  base: '/', // Use absolute paths for Vercel SPA routing
 })
