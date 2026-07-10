@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Camera, Video, Volume2, ShieldAlert, Wifi, Link2, Layers, HardHat, Package, ChevronDown, Map, Navigation, CheckSquare, Square, AlertTriangle, Download, Image as ImageIcon, Loader } from 'lucide-react';
+import { Camera, Video, Volume2, ShieldAlert, Wifi, Link2, Layers, HardHat, Package, ChevronDown, Map, Navigation, CheckSquare, Square, AlertTriangle, Download, Image as ImageIcon, Loader, X } from 'lucide-react';
 import { getMaterialIcon, getPuntoName, compressImageToWebp } from '../utils/helpers';
 import { supabase } from '../supabaseClient';
 
@@ -10,6 +10,7 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUploadingFoto, setIsUploadingFoto] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [showFullImage, setShowFullImage] = useState(false);
   const fileInputRef = useRef(null);
   
   const ptz = loc.camara_ptz;
@@ -131,14 +132,18 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
       
       {/* Banner de Foto */}
       {loc.foto_url && (
-        <div style={{
-          width: '100%',
-          height: isCompact ? '120px' : '200px',
-          backgroundImage: `url(${loc.foto_url})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          borderBottom: '1px solid var(--border-light)'
-        }} />
+        <div 
+          onClick={() => setShowFullImage(true)}
+          style={{
+            width: '100%',
+            height: isCompact ? '120px' : '200px',
+            backgroundImage: `url(${loc.foto_url})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            borderBottom: '1px solid var(--border-light)',
+            cursor: 'pointer'
+          }} 
+        />
       )}
 
       <div className="loc-card-header" style={{ paddingTop: loc.foto_url ? '1rem' : undefined }}>
@@ -384,6 +389,56 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Modal para ver foto completa */}
+      {showFullImage && loc.foto_url && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            zIndex: 999999,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '2rem'
+          }}
+          onClick={() => setShowFullImage(false)}
+        >
+          <button 
+            onClick={(e) => { e.stopPropagation(); setShowFullImage(false); }}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              color: 'white',
+              cursor: 'pointer',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}
+          >
+            <X size={24} />
+          </button>
+          <img 
+            src={loc.foto_url} 
+            alt={`Punto ${loc.destino_esp}`}
+            style={{
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'contain',
+              borderRadius: '8px',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>
