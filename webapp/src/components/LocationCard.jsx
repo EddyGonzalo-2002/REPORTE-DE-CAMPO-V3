@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Camera, Video, Volume2, ShieldAlert, Wifi, Link2, Layers, HardHat, Package, ChevronDown, Map, Navigation, CheckSquare, Square, AlertTriangle, Download, Image as ImageIcon, Loader, X } from 'lucide-react';
@@ -392,8 +393,9 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
         </div>
       )}
 
+
       {/* Modal para ver foto completa */}
-      {showFullImage && loc.foto_url && (
+      {showFullImage && loc.foto_url && createPortal(
         <div 
           style={{
             position: 'fixed',
@@ -439,7 +441,8 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
             }}
             onClick={(e) => e.stopPropagation()}
           />
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
