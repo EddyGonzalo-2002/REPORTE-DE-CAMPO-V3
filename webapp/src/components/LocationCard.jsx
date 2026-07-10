@@ -9,6 +9,7 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
   const [showLogistica, setShowLogistica] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUploadingFoto, setIsUploadingFoto] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
   
   const ptz = loc.camara_ptz;
@@ -179,6 +180,46 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
         </div>
       )}
 
+      {!isCompact && session && (
+        <div 
+          style={{
+            border: isDragging ? '2px dashed var(--primary)' : '2px dashed var(--border-light)',
+            background: isDragging ? 'var(--primary-glow)' : 'var(--overlay-w-10)',
+            borderRadius: '8px',
+            padding: '1.5rem',
+            textAlign: 'center',
+            cursor: 'pointer',
+            marginTop: '1rem',
+            marginBottom: '1rem',
+            transition: 'all 0.3s ease'
+          }}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+              handleFotoUpload({ target: { files: [e.dataTransfer.files[0]] } });
+            }
+          }}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {isUploadingFoto ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
+              <Loader size={24} className="spin" />
+              <span style={{ fontSize: '0.85rem' }}>Subiendo foto...</span>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
+              <ImageIcon size={24} style={{ color: isDragging ? 'var(--primary)' : 'var(--text-muted)' }} />
+              <span style={{ fontSize: '0.85rem' }}>
+                {loc.foto_url ? 'Arrastra o haz clic para cambiar la foto' : 'Arrastra una foto aquí o haz clic para subirla'}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="loc-actions" style={{ 
         display: 'flex', 
         flexWrap: 'wrap',
@@ -277,27 +318,28 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
               {!isCompact && (isUpdating ? '...' : loc.observado ? 'Observado (Desmarcar)' : 'Marcar Observado')}
             </button>
             
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploadingFoto}
-              className="map-nav-btn"
-              style={{ 
-                background: 'var(--overlay-w-10)', 
-                cursor: 'pointer',
-                border: '1px solid var(--border-light)', 
-                color: 'var(--text-main)',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: '0.4rem',
-                padding: isCompact ? '0.5rem' : '0.75rem 1rem',
-                flex: isCompact ? '1' : 'auto'
-              }}
-              title="Subir Foto"
-            >
-              {isUploadingFoto ? <Loader size={16} className="spin" /> : <ImageIcon size={16} />}
-              {!isCompact && (isUploadingFoto ? 'Subiendo...' : 'Subir Foto')}
-            </button>
+            {isCompact && (
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingFoto}
+                className="map-nav-btn"
+                style={{ 
+                  background: 'var(--overlay-w-10)', 
+                  cursor: 'pointer',
+                  border: '1px solid var(--border-light)', 
+                  color: 'var(--text-main)',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.5rem',
+                  flex: '1'
+                }}
+                title="Subir Foto"
+              >
+                {isUploadingFoto ? <Loader size={16} className="spin" /> : <ImageIcon size={16} />}
+              </button>
+            )}
           </>
         )}
 
