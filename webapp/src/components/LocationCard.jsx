@@ -103,20 +103,22 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
         {boton && boton !== '0' && <div className="equipo-item boton"><ShieldAlert size={14}/> <span>Botón</span></div>}
       </div>
 
-      <div className="tech-specs">
-        <div className="spec-item">
-          <Layers size={14} />
-          <span>{loc.material_base || 'N/A'}</span>
+      {!isCompact && (
+        <div className="tech-specs">
+          <div className="spec-item">
+            <Layers size={14} />
+            <span>{loc.material_base || 'N/A'}</span>
+          </div>
+          <div className="spec-item">
+            <Link2 size={14} />
+            <span>{loc.metodo_anclaje || 'N/A'}</span>
+          </div>
+          <div className="spec-item">
+            <Wifi size={14} />
+            <span>{loc.medio_comunicacion || 'N/A'}</span>
+          </div>
         </div>
-        <div className="spec-item">
-          <Link2 size={14} />
-          <span>{loc.metodo_anclaje || 'N/A'}</span>
-        </div>
-        <div className="spec-item">
-          <Wifi size={14} />
-          <span>{loc.medio_comunicacion || 'N/A'}</span>
-        </div>
-      </div>
+      )}
 
       <div className="loc-actions" style={{ 
         display: 'grid', 
