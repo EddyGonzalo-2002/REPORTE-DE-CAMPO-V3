@@ -151,7 +151,7 @@ export default function App() {
       case '/admin/cuadrillas': return 'Cuadrillas';
       case '/admin/inventario': return 'Inventario Base';
       case '/admin/reglas': return 'Reglas Generación';
-      default: return 'Dashboard';
+      default: return 'CampReport';
     }
   };
 
@@ -170,7 +170,7 @@ export default function App() {
       <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', position: 'relative' }}>
           <Activity size={24} color="var(--primary)" />
-          <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>Dashboard</span>
+          <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>CampReport</span>
           
           <button 
             onClick={toggleTheme} 
