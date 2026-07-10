@@ -220,6 +220,7 @@ body {
   background: transparent;
   border: 1px solid transparent;
   color: var(--text-muted);
+  text-decoration: none;
   padding: 0.75rem 1rem;
   border-radius: 8px;
   font-weight: 600;
@@ -238,7 +239,23 @@ body {
 .cuadrilla-nav-btn.active {
   background: rgba(59, 130, 246, 0.1);
   color: var(--primary);
-  border-color: rgba(59, 130, 246, 0.3);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+/* Map Popup Styles for Dark/Light Theme */
+.custom-popup .leaflet-popup-content-wrapper,
+.custom-popup .leaflet-popup-tip {
+  background: var(--bg-card);
+  color: var(--text-main);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+.custom-popup .leaflet-popup-content {
+  margin: 0;
+  padding: 0;
+  width: 100% !important;
+}
+.custom-popup .leaflet-popup-close-button {
+  color: var(--text-main) !important;
 }
 
 .active-dot {
@@ -1051,3 +1068,109 @@ body {
   }
 }
 
+
+/* Responsive Form Rows */
+.form-responsive-row {
+  display: flex;
+  gap: 1rem;
+}
+.form-responsive-row .splash-btn {
+  width: auto;
+}
+@media (max-width: 768px) {
+  .form-responsive-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+/* Fix select options contrast */
+select.splash-input option {
+  background: #18181b;
+  color: #f8fafc;
+}
+[data-theme="light"] select.splash-input option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+/* Responsive headers and action buttons */
+.responsive-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.responsive-header .splash-btn {
+  width: auto;
+}
+.responsive-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+@media (max-width: 768px) {
+  .responsive-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .responsive-header button,
+  .form-responsive-row .splash-btn {
+    width: 100% !important;
+  }
+  .responsive-actions button {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* Add these styles to fix the sidebar layout */
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Add these styles to fix the sidebar layout */
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.cuadrilla-nav-btn {
+  text-decoration: none;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+}
+
+.sidebar-item:hover {
+  background: var(--bg-card);
+  color: var(--text-main);
+}
+
+.sidebar-item.active {
+  background: var(--primary-glow);
+  color: var(--primary);
+  border-color: rgba(59, 130, 246, 0.5);
+}

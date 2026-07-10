@@ -1,1237 +1,365 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { Routes, Route, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { 
   ChevronDown, MapPin, Package, CalendarDays, Camera, 
   Video, Volume2, ShieldAlert, Wifi, Link2, Layers, 
   HardHat, Box, Cable, Zap, Server, Filter, Activity,
-  Target, Menu, X, Navigation, Sun, Moon, CheckSquare, Square, LogOut, Download, Map, BarChart2, Award, Search, AlertTriangle
+  Target, Menu, X, Navigation, Sun, Moon, CheckSquare, Square, LogOut, Download, Map, BarChart2, Award, Search, AlertTriangle, Users
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
+import { SplashScreen } from './components/SplashScreen';
+import { LocationCard } from './components/LocationCard';
+import { getPuntoName, getMaterialIcon } from './utils/helpers';
 
-const getMaterialIcon = (name) => {
-  const n = name.toLowerCase();
-  if (n.includes('cable') || n.includes('fibra') || n.includes('patch')) return <Cable size={20} />;
-  if (n.includes('switch') || n.includes('media conver') || n.includes('poe') || n.includes('inyector')) return <Server size={20} />;
-  if (n.includes('llave') || n.includes('transformador') || n.includes('supresor') || n.includes('ups') || n.includes('poder') || n.includes('pararrayo')) return <Zap size={20} />;
-  if (n.includes('camara') || n.includes('ptz') || n.includes('multisensor')) return <Camera size={20} />;
-  if (n.includes('altavoz') || n.includes('megafono')) return <Volume2 size={20} />;
-  if (n.includes('boton')) return <ShieldAlert size={20} />;
-  if (n.includes('abrazadera') || n.includes('anclaje') || n.includes('cinta') || n.includes('soporte') || n.includes('brazo')) return <Link2 size={20} />;
-  return <Box size={20} />;
-};
+// Admin Pages
+import { AdminMapDashboard } from './pages/AdminMapDashboard';
+import { SectoresManager } from './pages/SectoresManager';
+import { CuadrillasManager } from './pages/CuadrillasManager';
+import { InventoryManager } from './pages/InventoryManager';
+import { RulesManager } from './pages/RulesManager';
+import { AdminDashboard } from './pages/AdminDashboard';
+import { OperativoDashboard } from './pages/OperativoDashboard';
 
-const getPuntoName = (loc) => {
-  let raw = '';
-  if (loc['CAMARA PTZ'] && loc['CAMARA PTZ'] !== '0') raw = loc['CAMARA PTZ'];
-  else if (loc['CAMARA MULTISENSOR'] && loc['CAMARA MULTISENSOR'] !== '0') raw = loc['CAMARA MULTISENSOR'];
-  else if (loc['ALTAVOZ IP'] && loc['ALTAVOZ IP'] !== '0') raw = loc['ALTAVOZ IP'];
-  
-  if (raw) {
-    return raw.replace(/^(PTZ|MULTI|ALTAVOZ)-/i, '').trim();
-  }
-  
-  return `${loc['DESTINO ESP.']} - Frente ${loc['FRENTE']}`;
-};
+export default function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
 
-const SplashScreen = ({ onLogin, onGuest, session }) => {
-  const [view, setView] = useState('main'); // main, login
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      alert(error.message);
-    } else {
-      onLogin();
-    }
-  };
-
-  return (
-    <div className="splash-overlay">
-      <div className="splash-container">
-        <div className="splash-logo">
-          <div className="splash-logo-circle">
-            <Activity size={40} color="white" />
-          </div>
-        </div>
-        
-        {view === 'main' && (
-          <>
-            <div>
-              <h1 className="splash-title">Cusco Seguro</h1>
-              <p className="splash-subtitle">Plataforma Operativa de Logística y Cuadrillas</p>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
-              <button className="splash-btn primary" onClick={() => setView('login')}>
-                <ShieldAlert size={18} /> Entrar como Supervisor (Admin)
-              </button>
-              <button className="splash-btn secondary" onClick={onGuest}>
-                Continuar como Invitado
-              </button>
-            </div>
-          </>
-        )}
-
-        {view === 'login' && (
-          <>
-            <div>
-              <h1 className="splash-title">Acceso Restringido</h1>
-              <p className="splash-subtitle">Inicia sesión como supervisor</p>
-            </div>
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
-              <input 
-                type="email" 
-                placeholder="Correo electrónico" 
-                className="splash-input"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-              />
-              <input 
-                type="password" 
-                placeholder="Contraseña" 
-                className="splash-input"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-              />
-              <button type="submit" className="splash-btn primary" disabled={loading}>
-                {loading ? 'Verificando...' : 'Ingresar al Dashboard'}
-              </button>
-            </form>
-            <button className="splash-back" onClick={() => setView('main')} style={{ background: 'transparent' }}>
-              Volver
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaGlobal }) => {
-  const [showLogistica, setShowLogistica] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  
-  const ptz = loc['CAMARA PTZ'];
-  const multi = loc['CAMARA MULTISENSOR'];
-  const altavoz = loc['ALTAVOZ IP'];
-  const boton = loc['BOTON DE PANICO'];
-  const estado = loc['ESTADO OPERATIVO']?.toUpperCase();
-
-  const visibleMaterials = loc.MaterialesPunto || [];
-
-  const handleToggleCompletado = async () => {
-    if (!session) return;
-    setIsUpdating(true);
-    const isNowCompleted = !loc.completado;
-    const updateData = { completado: isNowCompleted };
-    if (isNowCompleted) updateData.observado = false; // Exclusión mutua
-    await onUpdatePunto(loc.id, updateData);
-    setIsUpdating(false);
-  };
-
-  const handleToggleObservado = async () => {
-    if (!session) return;
-    setIsUpdating(true);
-    const isNowObservado = !loc.observado;
-    const updateData = { observado: isNowObservado };
-    if (isNowObservado) updateData.completado = false; // Exclusión mutua
-    await onUpdatePunto(loc.id, updateData);
-    setIsUpdating(false);
-  };
-
-  const exportPointPDF = () => {
-    if (!visibleMaterials || visibleMaterials.length === 0) {
-      alert("No hay materiales en este punto para exportar.");
-      return;
-    }
-
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.setTextColor(15, 23, 42); // slate-900
-    doc.text(`Logística del Punto: ${getPuntoName(loc)}`, 14, 20);
-    
-    doc.setFontSize(11);
-    doc.setTextColor(71, 85, 105); // slate-600
-    doc.text(`Destino: ${loc['DESTINO ESP.']} | Sector: ${loc.sector}`, 14, 28);
-    
-    const tableColumn = ["Ítem", "Cantidad"];
-    const tableRows = visibleMaterials.map(m => [m.Item, m.Cantidad]);
-
-    autoTable(doc, {
-      head: [tableColumn],
-      body: tableRows,
-      startY: 32,
-      theme: 'grid',
-      headStyles: { fillColor: [59, 130, 246], fontSize: 9, cellPadding: 3 },
-      styles: { fontSize: 8, cellPadding: 3, minCellHeight: 4 },
-      alternateRowStyles: { fillColor: [241, 245, 249] },
-      margin: { top: 10, bottom: 10, left: 14, right: 14 }
-    });
-    
-    doc.save(`Logistica_Punto_${getPuntoName(loc).replace(/\s/g, '_')}.pdf`);
-  };
-
-  const mapLink = loc.Latitud && loc.Longitud ? `https://maps.google.com/maps?q=${loc.Latitud},${loc.Longitud}` : '';
-  const waText = encodeURIComponent(`Hola, este es el punto *${getPuntoName(loc)}* (${loc['DESTINO ESP.']}).\n📍 Ubicación: ${mapLink}`);
-  const waLink = `https://wa.me/?text=${waText}`;
-
-  let cardStatusClass = '';
-  if (loc.observado) cardStatusClass = 'observado';
-  else if (loc.completado) cardStatusClass = 'completed';
-
-  return (
-    <div className={`location-card ${cardStatusClass}`} style={{ 
-      opacity: (loc.completado || loc.observado) ? 0.8 : 1,
-      borderColor: loc.observado ? 'rgba(239, 68, 68, 0.4)' : undefined,
-      boxShadow: loc.observado ? '0 4px 20px rgba(239, 68, 68, 0.1)' : undefined
-    }}>
-      <div className="loc-card-header">
-        <div className="loc-destino">
-          <span className="destino-lbl">Punto: {getPuntoName(loc)}</span>
-          <h4>{loc['DESTINO ESP.']}</h4>
-          {cuadrillaGlobal && (
-            <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600, marginTop: '0.2rem', display: 'inline-block' }}>
-              <HardHat size={12} style={{ display: 'inline', verticalAlign: 'text-bottom' }} /> {cuadrillaGlobal}
-            </span>
-          )}
-        </div>
-        <div className="frente-badge" style={{ background: loc.observado ? 'var(--error)' : undefined }}>
-          {loc.observado ? 'OBSERVADO' : `Frente ${loc['FRENTE']}`}
-        </div>
-      </div>
-      
-      <div className="equipos-container">
-        {ptz && ptz !== '0' && <div className="equipo-item ptz"><Camera size={14}/> <span>PTZ</span></div>}
-        {multi && multi !== '0' && <div className="equipo-item multi"><Video size={14}/> <span>Multi</span></div>}
-        {altavoz && altavoz !== '0' && <div className="equipo-item altavoz"><Volume2 size={14}/> <span>Altavoz</span></div>}
-        {boton && boton !== '0' && <div className="equipo-item boton"><ShieldAlert size={14}/> <span>Botón</span></div>}
-      </div>
-
-      <div className="tech-specs">
-        <div className="spec-item">
-          <Layers size={14} />
-          <span>{loc['MATERIAL BASE'] || 'N/A'}</span>
-        </div>
-        <div className="spec-item">
-          <Link2 size={14} />
-          <span>{loc['METODO DE ANCLAJE'] || 'N/A'}</span>
-        </div>
-        <div className="spec-item">
-          <Wifi size={14} />
-          <span>{loc['MEDIO DE COMUNICACION'] || 'N/A'}</span>
-        </div>
-      </div>
-
-      <div style={{ padding: '0 1rem 1rem 1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-        {loc.Latitud && loc.Longitud && (
-          <>
-            <a 
-              href={mapLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="map-nav-btn"
-              style={{ background: 'var(--overlay-w-05)', color: 'var(--text-main)', border: '1px solid var(--border-light)' }}
-            >
-              <Map size={16} />
-              Cómo Llegar
-            </a>
-            <a 
-              href={waLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="map-nav-btn"
-              style={{ background: '#25D366', color: '#fff', border: 'none' }}
-            >
-              <Navigation size={16} />
-              WhatsApp
-            </a>
-          </>
-        )}
-        
-        {session && (
-          <>
-            <button 
-              onClick={handleToggleCompletado}
-              disabled={isUpdating}
-              className="map-nav-btn"
-              style={{ 
-                background: loc.completado ? 'var(--c-ptz)' : 'var(--overlay-w-10)', 
-                cursor: 'pointer',
-                border: loc.completado ? 'none' : '1px solid var(--border-light)', 
-                color: loc.completado ? '#fff' : 'var(--text-main)'
-              }}
-            >
-              {loc.completado ? <CheckSquare size={16} /> : <Square size={16} />}
-              {isUpdating ? '...' : loc.completado ? 'Completado' : 'Marcar Completado'}
-            </button>
-
-            <button 
-              onClick={handleToggleObservado}
-              disabled={isUpdating}
-              className="map-nav-btn"
-              style={{ 
-                background: loc.observado ? 'var(--error)' : 'var(--overlay-w-10)', 
-                cursor: 'pointer',
-                border: loc.observado ? 'none' : '1px solid var(--border-light)', 
-                color: loc.observado ? '#fff' : 'var(--error)'
-              }}
-            >
-              <AlertTriangle size={16} />
-              {isUpdating ? '...' : loc.observado ? 'Observado (Desmarcar)' : 'Marcar Observado'}
-            </button>
-          </>
-        )}
-
-        <button 
-          onClick={exportPointPDF}
-          className="map-nav-btn"
-          style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#fff', border: 'none' }}
-        >
-          <Download size={16} /> Exportar PDF
-        </button>
-      </div>
-
-      {visibleMaterials.length > 0 && (
-        <div className="loc-materials-container">
-          <div 
-            className={`loc-materials-toggle ${showLogistica ? 'open' : ''}`} 
-            onClick={() => setShowLogistica(!showLogistica)}
-          >
-            <span><Package size={16} /> Logística del Punto</span>
-            <ChevronDown 
-              size={18} 
-              style={{ 
-                transform: showLogistica ? 'rotate(180deg)' : 'none', 
-                transition: 'transform 0.3s' 
-              }} 
-            />
-          </div>
-          {showLogistica && (
-            <div className="loc-materials-list">
-              {visibleMaterials.map((m, midx) => (
-                <div key={midx} className="loc-mat-item">
-                  <div className="loc-mat-item-left">
-                    <div className="loc-mat-icon">
-                      {getMaterialIcon(m.Item)}
-                    </div>
-                    <span className="loc-mat-name">{m.Item}</span>
-                  </div>
-                  <span className="loc-mat-qty">{m.Cantidad}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="card-footer">
-        <div className="dates-info">
-          <div className="date-item">
-            <CalendarDays size={12}/>
-            <span><strong>Día Programado:</strong> {dayLabel || '-'}</span>
-          </div>
-        </div>
-        <div className={`status-indicator ${estado === 'ACTIVO' ? 'active' : 'inactive'}`}>
-          {estado || 'N/A'}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const SectorGlobalLogistics = ({ materiales, sectorName }) => {
-  const [expanded, setExpanded] = useState(false);
-  
-  if (!materiales || materiales.length === 0) return null;
-
-  const exportSectorPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.setTextColor(15, 23, 42);
-    doc.text(`Logística Global del Sector: ${sectorName}`, 14, 20);
-    
-    const tableColumn = ["Ítem", "Cantidad"];
-    const tableRows = materiales.map(m => [m.Item, m.Cantidad]);
-
-    autoTable(doc, {
-      head: [tableColumn],
-      body: tableRows,
-      startY: 28,
-      theme: 'grid',
-      headStyles: { fillColor: [59, 130, 246], fontSize: 9, cellPadding: 3 },
-      styles: { fontSize: 8, cellPadding: 3, minCellHeight: 4 },
-      alternateRowStyles: { fillColor: [241, 245, 249] },
-      margin: { top: 10, bottom: 10, left: 14, right: 14 }
-    });
-    
-    doc.save(`Logistica_Global_${sectorName.replace(/\s/g, '_')}.pdf`);
-  };
-
-  return (
-    <div className="section-block loc-materials-container" style={{ marginTop: 0, marginBottom: '1.5rem', background: 'rgba(255, 255, 255, 0.02)' }}>
-      <div 
-        className={`loc-materials-toggle ${expanded ? 'open' : ''}`} 
-        onClick={() => setExpanded(!expanded)}
-        style={{ color: 'var(--text-main)' }}
-      >
-        <span><Package size={16} color="var(--secondary)" /> Logística Global del Sector</span>
-        <ChevronDown size={18} style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0)' }} />
-      </div>
-      
-      {expanded && (
-        <div style={{ padding: '1rem' }}>
-          <button 
-            onClick={exportSectorPDF}
-            className="map-nav-btn"
-            style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#fff', border: 'none', marginBottom: '1rem', width: 'fit-content' }}
-          >
-            <Download size={16} /> Exportar PDF Global
-          </button>
-          <div className="materials-grid" style={{ marginBottom: 0 }}>
-            {materiales.map((mat, idx) => (
-              <div key={idx} className="material-card">
-                <div className="mat-icon-wrapper">
-                  {getMaterialIcon(mat.Item)}
-                </div>
-                <div className="mat-info">
-                  <span className="mat-qty">{mat.Cantidad}</span>
-                  <span className="mat-name">{mat.Item}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const AdminDashboard = ({ data }) => {
-  const [expandedCuadrilla, setExpandedCuadrilla] = useState(null);
-  const [showObservadosModal, setShowObservadosModal] = useState(false);
-
-  if (!data) return null;
-
-  const rankings = [];
-  let totalCompletados = 0;
-  let totalObservados = 0;
-  let totalAsignados = 0;
-
-  let ptzCompletadas = 0;
-  let multiCompletadas = 0;
-  let altavocesCompletados = 0;
-  let botonesCompletados = 0;
-  
-  const observadosDetalle = [];
-
-  Object.keys(data).forEach(cuadrilla => {
-    let completados = 0;
-    let asignados = 0;
-    const completadosList = [];
-
-    Object.keys(data[cuadrilla]).forEach(sector => {
-       const inst = data[cuadrilla][sector].Instalaciones || [];
-       asignados += inst.length;
-       inst.forEach(i => {
-         if (i.completado) {
-           completados++;
-           completadosList.push(getPuntoName(i));
-           if (i['CAMARA PTZ'] && i['CAMARA PTZ'] !== '0') ptzCompletadas++;
-           if (i['CAMARA MULTISENSOR'] && i['CAMARA MULTISENSOR'] !== '0') multiCompletadas++;
-           if (i['ALTAVOZ IP'] && i['ALTAVOZ IP'] !== '0') altavocesCompletados++;
-           if (i['BOTON DE PANICO'] && i['BOTON DE PANICO'] !== '0') botonesCompletados++;
-         }
-         if (i.observado) {
-           totalObservados++;
-           observadosDetalle.push({ nombre: getPuntoName(i), cuadrilla: cuadrilla.replace('CUADRILLA-', 'C-') });
-         }
-       });
-    });
-    totalCompletados += completados;
-    totalAsignados += asignados;
-    rankings.push({ 
-      cuadrilla: cuadrilla.replace('CUADRILLA-', 'C-'), 
-      completados, 
-      asignados,
-      progreso: asignados > 0 ? ((completados / asignados) * 100).toFixed(1) : 0,
-      completadosList
-    });
-  });
-
-  rankings.sort((a,b) => b.completados - a.completados);
-
-  return (
-    <div className="main-scroll-area">
-      <div style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-          <BarChart2 size={24} color="var(--primary)" /> Panel de Métricas
-        </h2>
-        <p style={{ color: 'var(--text-muted)' }}>Vista global de avances por cuadrilla y estado del proyecto.</p>
-      </div>
-
-      <div className="kpi-grid admin-kpi-top" style={{ marginBottom: '1rem' }}>
-        <div className="kpi-card" style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))', borderColor: 'rgba(59, 130, 246, 0.3)' }}>
-          <div className="kpi-icon" style={{color: 'var(--primary)'}}><Award size={32}/></div>
-          <div className="kpi-info">
-            <span className="kpi-val" style={{ fontSize: '2rem' }}>{totalCompletados}</span>
-            <span className="kpi-lbl">Puntos Completados Global</span>
-          </div>
-        </div>
-        <div 
-          className="kpi-card" 
-          style={{ background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(185, 28, 28, 0.1))', borderColor: 'rgba(239, 68, 68, 0.3)', cursor: 'pointer' }}
-          onClick={() => setShowObservadosModal(true)}
-          title="Haz clic para ver detalles"
-        >
-          <div className="kpi-icon" style={{color: 'var(--error)'}}><AlertTriangle size={32}/></div>
-          <div className="kpi-info">
-            <span className="kpi-val" style={{ fontSize: '2rem', color: 'var(--error)' }}>{totalObservados}</span>
-            <span className="kpi-lbl">Puntos Observados Global</span>
-          </div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-icon" style={{color: 'var(--text-muted)'}}><MapPin size={32}/></div>
-          <div className="kpi-info">
-            <span className="kpi-val" style={{ fontSize: '2rem' }}>{totalAsignados}</span>
-            <span className="kpi-lbl">Total de Puntos Asignados</span>
-          </div>
-        </div>
-      </div>
-
-      <h3 style={{ marginBottom: '1rem', color: 'var(--text-main)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Equipos Instalados</h3>
-      <div className="kpi-grid admin-kpi-bottom" style={{ marginBottom: '2rem' }}>
-        <div className="kpi-card" style={{ padding: '1rem' }}>
-          <div className="kpi-icon" style={{color: 'var(--c-ptz)'}}><Camera size={20}/></div>
-          <div className="kpi-info">
-            <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{ptzCompletadas}</span>
-            <span className="kpi-lbl">PTZ Instaladas</span>
-          </div>
-        </div>
-        <div className="kpi-card" style={{ padding: '1rem' }}>
-          <div className="kpi-icon" style={{color: 'var(--c-multi)'}}><Video size={20}/></div>
-          <div className="kpi-info">
-            <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{multiCompletadas}</span>
-            <span className="kpi-lbl">Multi Instaladas</span>
-          </div>
-        </div>
-        <div className="kpi-card" style={{ padding: '1rem' }}>
-          <div className="kpi-icon" style={{color: 'var(--c-altavoz)'}}><Volume2 size={20}/></div>
-          <div className="kpi-info">
-            <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{altavocesCompletados}</span>
-            <span className="kpi-lbl">Altavoces IP</span>
-          </div>
-        </div>
-        <div className="kpi-card" style={{ padding: '1rem' }}>
-          <div className="kpi-icon" style={{color: 'var(--c-boton)'}}><ShieldAlert size={20}/></div>
-          <div className="kpi-info">
-            <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{botonesCompletados}</span>
-            <span className="kpi-lbl">Botones Pánico</span>
-          </div>
-        </div>
-      </div>
-
-      <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.9rem' }}>Ranking de Cuadrillas</h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {rankings.map((r, i) => (
-          <div key={i} className="ranking-card" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-            <div 
-              style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', cursor: 'pointer', flexWrap: 'wrap' }}
-              onClick={() => setExpandedCuadrilla(expandedCuadrilla === r.cuadrilla ? null : r.cuadrilla)}
-            >
-              <div className="ranking-position" style={{ color: i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : 'var(--text-muted)', width: '40px' }}>
-                #{i + 1}
-              </div>
-              <div style={{ flex: 1, minWidth: '200px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 700, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {r.cuadrilla} 
-                    <ChevronDown size={16} style={{ color: 'var(--text-muted)', transform: expandedCuadrilla === r.cuadrilla ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }} />
-                  </span>
-                  <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{r.completados} / {r.asignados} pts</span>
-                </div>
-                <div style={{ width: '100%', height: '8px', background: 'var(--overlay-w-10)', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${r.progreso}%`, background: 'var(--primary)', transition: 'width 1s ease-out' }}></div>
-                </div>
-              </div>
-              <div className="ranking-score">
-                {r.progreso}%
-              </div>
-            </div>
-
-            {expandedCuadrilla === r.cuadrilla && (
-              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-light)' }}>
-                <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Puntos Completados:</h4>
-                {r.completadosList.length > 0 ? (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {r.completadosList.map((ptName, pIdx) => (
-                      <span key={pIdx} style={{ background: 'var(--overlay-w-05)', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.85rem', color: 'var(--text-main)', border: '1px solid var(--border-light)' }}>
-                        <CheckSquare size={12} style={{ color: 'var(--c-ptz)', display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />
-                        {ptName}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Ningún punto completado aún.</p>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Modal Puntos Observados */}
-      {showObservadosModal && (
-        <div className="splash-overlay" onClick={() => setShowObservadosModal(false)}>
-          <div className="splash-container" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', width: '90%', padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ color: 'var(--error)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem' }}>
-                <AlertTriangle size={24} /> Detalle de Puntos Observados
-              </h3>
-              <button onClick={() => setShowObservadosModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                <X size={24} />
-              </button>
-            </div>
-            
-            <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: '0.5rem' }} className="sidebar-scroll">
-              {observadosDetalle.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {observadosDetalle.map((obs, idx) => (
-                    <div key={idx} style={{ padding: '0.75rem', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{obs.nombre}</span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--error)', background: 'rgba(239, 68, 68, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '12px', fontWeight: 600 }}>
-                        {obs.cuadrilla}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem 0' }}>No hay puntos observados registrados actualmente.</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const App = () => {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
-  const [hasEntered, setHasEntered] = useState(false);
-  const [viewMode, setViewMode] = useState('operative'); // operative, metrics
-
-  const [activeCuadrilla, setActiveCuadrilla] = useState('');
-  const [expandedSector, setExpandedSector] = useState(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
-
-  const [filterSector, setFilterSector] = useState('ALL');
-  const [filterEquipo, setFilterEquipo] = useState('ALL');
-  const [filterFecha, setFilterFecha] = useState('ALL');
-  const [filterPunto, setFilterPunto] = useState('ALL');
-
-  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
-
+  
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
-
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  
+  // Operativo State
+  const [activeCuadrilla, setActiveCuadrilla] = useState('');
+  const [filterSector, setFilterSector] = useState('ALL');
+  const [filterEquipo, setFilterEquipo] = useState('ALL');
+  const [filterFecha, setFilterFecha] = useState('ALL');
+  const [filterPunto, setFilterPunto] = useState('ALL');
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+  
+  // Data State
+  const [cuadrillasList, setCuadrillasList] = useState([]);
+  const [cuadrillasMap, setCuadrillasMap] = useState({});
+  const [sectoresList, setSectoresList] = useState([]);
+  const [sectoresMap, setSectoresMap] = useState({});
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) setHasEntered(true);
+      setSessionLoading(false);
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) setHasEntered(true);
-    });
-
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      // Función para obtener todos los registros manejando la paginación de Supabase (>1000)
-      const fetchAllRows = async (table) => {
-        let allData = [];
-        let from = 0;
-        const step = 1000;
-        let hasMore = true;
-        while (hasMore) {
-          const { data, error } = await supabase.from(table).select('*').range(from, from + step - 1).order('id', { ascending: true });
-          if (error) throw error;
-          if (data && data.length > 0) {
-            allData = [...allData, ...data];
-            from += step;
-          }
-          if (!data || data.length < step) {
-            hasMore = false;
-          }
-        }
-        return allData;
-      };
-
-      const puntos = await fetchAllRows('puntos_instalacion');
-      const materiales = await fetchAllRows('materiales_punto');
-
-      const newData = {};
-      puntos.forEach(p => {
-        if (!newData[p.cuadrilla]) newData[p.cuadrilla] = {};
-        if (!newData[p.cuadrilla][p.sector]) newData[p.cuadrilla][p.sector] = { Instalaciones: [], Materiales: [] };
-        
-        const mats = materiales.filter(m => m.punto_id === p.id).map(m => ({ Item: m.item, Cantidad: m.cantidad }));
-        
-        newData[p.cuadrilla][p.sector].Instalaciones.push({
-          id: p.id,
-          sector: p.sector,
-          'DESTINO ESP.': p.destino_esp,
-          'FRENTE': p.frente,
-          'CAMARA PTZ': p.camara_ptz,
-          'CAMARA MULTISENSOR': p.camara_multisensor,
-          'ALTAVOZ IP': p.altavoz_ip,
-          'BOTON DE PANICO': p.boton_panico,
-          'MATERIAL BASE': p.material_base,
-          'METODO DE ANCLAJE': p.metodo_anclaje,
-          'MEDIO DE COMUNICACION': p.medio_comunicacion,
-          'ESTADO OPERATIVO': p.estado_operativo,
-          Latitud: p.latitud,
-          Longitud: p.longitud,
-          'FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO': p.dia_programado,
-          completado: p.completado,
-          observado: p.observado,
-          MaterialesPunto: mats
-        });
-      });
-      
-      setData(newData);
-      const cuadrillas = Object.keys(newData).sort();
-      if (cuadrillas.length > 0 && !activeCuadrilla) setActiveCuadrilla(cuadrillas[0]);
-    } catch (e) {
-      console.error(e);
-    }
-    setLoading(false);
-  };
-
-  const handleUpdatePunto = async (id, updateData) => {
-    const { error } = await supabase.from('puntos_instalacion').update(updateData).eq('id', id);
-    if (!error) {
-      fetchData();
-    } else {
-      alert("Error al actualizar: " + error.message);
-    }
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setHasEntered(false);
-    setViewMode('operative');
-    setGlobalSearchQuery('');
-  };
-
-  const dateToDayIndex = useMemo(() => {
-    if (!data) return {};
-    const dates = new Set();
-    Object.values(data).forEach(cuadrillaData => {
-      Object.values(cuadrillaData).forEach(sectorData => {
-        (sectorData.Instalaciones || []).forEach(loc => {
-          const d = loc['FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO']?.split(' ')[0];
-          if (d && d !== '-' && d !== '') dates.add(d);
-        });
-      });
-    });
-    const sortedDates = Array.from(dates).sort();
-    return Object.fromEntries(sortedDates.map((d, i) => [d, `Día ${i + 1}`]));
-  }, [data]);
-
-  const globalSearchResults = useMemo(() => {
-    if (!globalSearchQuery || !data || !session) return [];
-    const results = [];
-    const query = globalSearchQuery.toLowerCase();
-    
-    Object.keys(data).forEach(cuadrilla => {
-      Object.keys(data[cuadrilla]).forEach(sector => {
-        const inst = data[cuadrilla][sector].Instalaciones || [];
-        inst.forEach(loc => {
-          const punto = getPuntoName(loc).toLowerCase();
-          const destino = (loc['DESTINO ESP.'] || '').toLowerCase();
-          if (punto.includes(query) || destino.includes(query)) {
-            results.push({ ...loc, cuadrillaPertenece: cuadrilla.replace('CUADRILLA-', 'C-') });
-          }
-        });
-      });
-    });
-    return results;
-  }, [data, globalSearchQuery, session]);
-
-  const currentData = data && activeCuadrilla ? data[activeCuadrilla] : {};
-  const allSectors = currentData ? Object.keys(currentData).sort() : [];
-  const cuadrillas = data ? Object.keys(data).sort() : [];
-
-  const { 
-    filteredSectors, 
-    stats, 
-    availableSectors, 
-    availablePuntos, 
-    availableEquipos, 
-    availableFechas 
-  } = useMemo(() => {
-    if (!data || !currentData) return { filteredSectors: {}, stats: {}, availableSectors: [], availablePuntos: [], availableEquipos: [], availableFechas: [] };
-
-    let statLocs = 0;
-    let statPtz = 0;
-    let statMulti = 0;
-    let statAltavoz = 0;
-    let statBoton = 0;
-
-    const filtered = {};
-    const aSectors = new Set();
-    const aPuntos = new Set();
-    const aEquipos = new Set();
-    const aFechas = new Set();
-
-    const isGuest = !session;
-
-    allSectors.forEach(sector => {
-      const sectorData = currentData[sector];
-      const instalaciones = sectorData.Instalaciones || [];
-      const materiales = sectorData.Materiales || [];
-
-      const sectorPasses = filterSector === 'ALL' || filterSector === sector;
-
-      const filteredInst = instalaciones.filter(loc => {
-        // FILTRO PRINCIPAL INVITADOS: Ocultar si está completado o si está observado
-        if (isGuest && (loc.completado || loc.observado)) return false;
-
-        const ptz = loc['CAMARA PTZ'] && loc['CAMARA PTZ'] !== '0';
-        const multi = loc['CAMARA MULTISENSOR'] && loc['CAMARA MULTISENSOR'] !== '0';
-        const altavoz = loc['ALTAVOZ IP'] && loc['ALTAVOZ IP'] !== '0';
-        const btn = loc['BOTON DE PANICO'] && loc['BOTON DE PANICO'] !== '0';
-        const punto = getPuntoName(loc);
-        const dateEqRaw = loc['FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO']?.split(' ')[0];
-        const dateEq = dateEqRaw && dateEqRaw !== '-' ? dateToDayIndex[dateEqRaw] : null;
-
-        const hasValidDate = dateEq !== null && dateEq !== undefined;
-        const fechaPasses = hasValidDate && (filterFecha === 'ALL' || dateEq === filterFecha);
-
-        const equipoPasses = filterEquipo === 'ALL' || 
-          (filterEquipo === 'PTZ' && ptz) || 
-          (filterEquipo === 'MULTI' && multi) || 
-          (filterEquipo === 'ALTAVOZ' && altavoz);
-          
-        const puntoPasses = filterPunto === 'ALL' || punto === filterPunto;
-
-        if (equipoPasses && fechaPasses && puntoPasses) aSectors.add(sector);
-        if (sectorPasses && fechaPasses && equipoPasses) aPuntos.add(punto);
-        if (sectorPasses && puntoPasses && fechaPasses) {
-            if (ptz) aEquipos.add('PTZ');
-            if (multi) aEquipos.add('MULTI');
-            if (altavoz) aEquipos.add('ALTAVOZ');
-        }
-        if (sectorPasses && equipoPasses && puntoPasses) {
-            if (dateEq) aFechas.add(dateEq);
-        }
-
-        if (!sectorPasses || !equipoPasses || !fechaPasses || !puntoPasses) return false;
-        return true;
-      });
-
-      filteredInst.forEach(loc => {
-        statLocs++;
-        if (loc['CAMARA PTZ'] && loc['CAMARA PTZ'] !== '0') statPtz++;
-        if (loc['CAMARA MULTISENSOR'] && loc['CAMARA MULTISENSOR'] !== '0') statMulti++;
-        if (loc['ALTAVOZ IP'] && loc['ALTAVOZ IP'] !== '0') statAltavoz++;
-        if (loc['BOTON DE PANICO'] && loc['BOTON DE PANICO'] !== '0') statBoton++;
-      });
-
-      const hideMats = (filterEquipo !== 'ALL' || filterFecha !== 'ALL' || filterPunto !== 'ALL');
-      const hasInst = filteredInst.length > 0;
-      const hasMats = !hideMats && sectorPasses && materiales.length > 0;
-
-      if (hasInst || hasMats) {
-        filtered[sector] = {
-          Instalaciones: filteredInst,
-          Materiales: hasMats ? materiales : []
-        };
+      // If user logs in and is on splash screen, navigate to dashboard
+      if (session && location.pathname === '/') {
+        navigate('/admin/dashboard');
       }
     });
 
-    return { 
-      filteredSectors: filtered, 
-      stats: { statLocs, statPtz, statMulti, statAltavoz, statBoton },
-      availableSectors: Array.from(aSectors).sort(),
-      availablePuntos: Array.from(aPuntos).sort(),
-      availableEquipos: Array.from(aEquipos).sort(),
-      availableFechas: Array.from(aFechas).sort((a, b) => {
-        const numA = parseInt(a.replace('Día ', ''));
-        const numB = parseInt(b.replace('Día ', ''));
-        return numA - numB;
-      })
-    };
-  }, [data, activeCuadrilla, filterSector, filterEquipo, filterFecha, filterPunto, currentData, allSectors, dateToDayIndex, session]);
+    return () => subscription.unsubscribe();
+  }, [location.pathname, navigate]);
 
-  const displaySectors = Object.keys(filteredSectors).sort();
-
-  useEffect(() => { if (filterSector !== 'ALL' && !availableSectors.includes(filterSector)) setFilterSector('ALL'); }, [availableSectors, filterSector]);
-  useEffect(() => { if (filterPunto !== 'ALL' && !availablePuntos.includes(filterPunto)) setFilterPunto('ALL'); }, [availablePuntos, filterPunto]);
-  useEffect(() => { if (filterEquipo !== 'ALL' && !availableEquipos.includes(filterEquipo)) setFilterEquipo('ALL'); }, [availableEquipos, filterEquipo]);
-  useEffect(() => { if (filterFecha !== 'ALL' && !availableFechas.includes(filterFecha)) setFilterFecha('ALL'); }, [availableFechas, filterFecha]);
-
-  useEffect(() => {
-    setFilterSector('ALL');
-    setFilterEquipo('ALL');
-    setFilterFecha('ALL');
-    setFilterPunto('ALL');
-    setExpandedSector(displaySectors.length > 0 ? displaySectors[0] : null);
-  }, [activeCuadrilla]); // eslint-disable-line
-
-  const toggleSector = (sector) => {
-    setExpandedSector(expandedSector === sector ? null : sector);
+  const fetchData = async () => {
+    setLoading(true);
+    let allData = [];
+    let from = 0;
+    const step = 1000;
+    let hasMore = true;
+    while (hasMore) {
+      const { data, error } = await supabase.from('puntos_instalacion').select('*').range(from, from + step - 1).order('id', { ascending: true });
+      if (!error && data && data.length > 0) {
+        allData = [...allData, ...data];
+        from += step;
+      }
+      if (error || !data || data.length < step) {
+        hasMore = false;
+      }
+    }
+    
+    // Fetch materiales
+    let allMats = [];
+    from = 0;
+    hasMore = true;
+    while (hasMore) {
+      const { data, error } = await supabase.from('materiales_punto').select('*').range(from, from + step - 1);
+      if (!error && data && data.length > 0) {
+        allMats = [...allMats, ...data];
+        from += step;
+      }
+      if (error || !data || data.length < step) {
+        hasMore = false;
+      }
+    }
+    
+    const map = {};
+    allData.forEach(r => {
+      const mats = allMats.filter(m => m.punto_id === r.id).map(m => ({ Item: m.item, Cantidad: m.cantidad }));
+      map[r.id] = { ...r, MaterialesPunto: mats };
+    });
+    setData(map);
+    setLoading(false);
   };
 
-  if (loading && !data) {
-    return <div style={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center' }}>Cargando datos desde Supabase...</div>;
+  const fetchCuadrillas = async () => {
+    const { data: records, error } = await supabase.from('cuadrillas').select('*');
+    if (!error && records) {
+      setCuadrillasList(records);
+      const cmap = {};
+      records.forEach(c => cmap[c.internal_name] = c);
+      setCuadrillasMap(cmap);
+    }
+  };
+
+  const fetchSectores = async () => {
+    const { data: records, error } = await supabase.from('sectores').select('*');
+    if (!error && records) {
+      setSectoresList(records);
+      const smap = {};
+      records.forEach(s => smap[s.internal_name] = s);
+      setSectoresMap(smap);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+    fetchCuadrillas();
+    fetchSectores();
+  }, []);
+
+  const handleUpdatePunto = () => {
+    fetchData();
+  };
+
+  const getHeaderTitle = () => {
+    switch(location.pathname) {
+      case '/operativo': return 'Vista Operativa';
+      case '/admin/dashboard': return 'Dashboard General';
+      case '/admin/mapa': return 'Mapa de Puntos';
+      case '/admin/sectores': return 'Zonas / Sectores';
+      case '/admin/cuadrillas': return 'Cuadrillas';
+      case '/admin/inventario': return 'Inventario Base';
+      case '/admin/reglas': return 'Reglas Generación';
+      default: return 'Dashboard';
+    }
+  };
+
+  if (sessionLoading) {
+    return <div style={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-main)' }}><Activity className="spin" color="var(--primary)" /></div>;
   }
 
-  const isGlobalSearchActive = session && globalSearchQuery.length > 0 && viewMode === 'operative';
+  // Hide sidebar and header layout on splash screen
+  if (location.pathname === '/') {
+    return session ? <Navigate to="/admin/dashboard" replace /> : <SplashScreen onGuest={() => navigate('/operativo')} session={session} />;
+  }
 
   return (
-    <>
-      {!hasEntered && (
-        <SplashScreen 
-          onLogin={() => setHasEntered(true)} 
-          onGuest={() => setHasEntered(true)} 
-          session={session} 
-        />
-      )}
+    <div className="app-layout">
+      {/* Sidebar */}
+      <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', position: 'relative' }}>
+          <Activity size={24} color="var(--primary)" />
+          <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>Dashboard</span>
+          
+          <button 
+            onClick={toggleTheme} 
+            style={{
+              background: 'none', border: 'none', color: 'var(--text-main)', 
+              padding: '0.25rem', cursor: 'pointer', display: 'flex', marginLeft: 'auto',
+              marginRight: isSidebarOpen ? '2rem' : '0'
+            }}
+            title={theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
+          >
+            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
 
-      <div className="app-layout">
-        {isSidebarOpen && <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
-
-        <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-          <div className="sidebar-header">
-            <div className="header-brand">
-              <Activity size={28} color="var(--primary)" />
-              <div>
-                <h2>Dashboard</h2>
-                <p className="subtitle">{session ? 'Supervisor' : 'Operativo'}</p>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <button 
-                onClick={toggleTheme} 
-                style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex' }}
-                title={theme === 'dark' ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
-              >
-                {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-              </button>
-              <button className="close-sidebar-btn" onClick={() => setIsSidebarOpen(false)}>
-                <X size={24} />
-              </button>
-            </div>
-          </div>
-
-          <div className="sidebar-scroll">
+          <button className="menu-btn" onClick={() => setIsSidebarOpen(false)} style={{ position: 'absolute', right: '0', top: '50%', transform: 'translateY(-50%)', display: isSidebarOpen ? 'block' : 'none', background: 'none', border: 'none', color: 'var(--text-main)' }}>
+            <X size={20} />
+          </button>
+        </div>
+        
+        <div className="sidebar-scroll">
+          <nav className="cuadrilla-nav">
             {session && (
-              <div className="sidebar-section" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
-                <h3 className="sidebar-title"><BarChart2 size={16} /> Vistas Administrativas</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <button 
-                    onClick={() => { setViewMode('operative'); setGlobalSearchQuery(''); setIsSidebarOpen(false); }}
-                    className={`cuadrilla-nav-btn ${viewMode === 'operative' && !globalSearchQuery ? 'active' : ''}`}
-                  >
-                    <Map size={16} /> Mapa Operativo
-                  </button>
-                  <button 
-                    onClick={() => { setViewMode('metrics'); setGlobalSearchQuery(''); setIsSidebarOpen(false); }}
-                    className={`cuadrilla-nav-btn ${viewMode === 'metrics' ? 'active' : ''}`}
-                  >
-                    <BarChart2 size={16} /> Métricas / Avances
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {session && (
-              <div className="sidebar-section" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
-                <h3 className="sidebar-title"><Search size={16} /> Búsqueda Global</h3>
-                <input 
-                  type="text" 
-                  className="splash-input" 
-                  placeholder="Buscar cualquier punto..."
-                  value={globalSearchQuery}
-                  onChange={(e) => { setGlobalSearchQuery(e.target.value); setViewMode('operative'); }}
-                  style={{ padding: '0.6rem', fontSize: '0.9rem', borderRadius: '8px', background: 'var(--bg-main)' }}
-                />
-              </div>
-            )}
-
-            {viewMode === 'operative' && !isGlobalSearchActive && (
               <>
-                <div className="sidebar-section">
-                  <h3 className="sidebar-title"><HardHat size={16} /> Cuadrilla Activa</h3>
-                  <div className="filter-group">
-                    <div style={{ position: 'relative' }}>
-                      <select 
-                        value={activeCuadrilla} 
-                        onChange={(e) => { setActiveCuadrilla(e.target.value); setIsSidebarOpen(false); }}
-                        className="splash-input"
-                        style={{ paddingRight: '2rem', appearance: 'none', background: 'var(--bg-main)' }}
-                      >
-                        {cuadrillas.map(c => (
-                          <option key={c} value={c}>{c.replace('CUADRILLA-', 'Cuadrilla ')}</option>
-                        ))}
-                      </select>
-                      <ChevronDown size={16} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="sidebar-section">
-                  <h3 className="sidebar-title"><Filter size={16} /> Filtros de Búsqueda</h3>
-                  <div className="filter-controls-vertical">
-                    <div className="filter-group">
-                      <label>Sector</label>
-                      <select value={filterSector} onChange={(e) => setFilterSector(e.target.value)}>
-                        <option value="ALL">Todos los Sectores</option>
-                        {availableSectors.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </div>
-                    <div className="filter-group">
-                      <label>Punto Específico</label>
-                      <select value={filterPunto} onChange={(e) => setFilterPunto(e.target.value)}>
-                        <option value="ALL">Todos los Puntos</option>
-                        {availablePuntos.map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                    </div>
-                    <div className="filter-group">
-                      <label>Equipo Principal</label>
-                      <select value={filterEquipo} onChange={(e) => setFilterEquipo(e.target.value)}>
-                        <option value="ALL">Cualquier Equipo</option>
-                        {availableEquipos.includes('PTZ') && <option value="PTZ">Cámara PTZ</option>}
-                        {availableEquipos.includes('MULTI') && <option value="MULTI">Cámara Multisensor</option>}
-                        {availableEquipos.includes('ALTAVOZ') && <option value="ALTAVOZ">Altavoz IP</option>}
-                      </select>
-                    </div>
-                    <div className="filter-group">
-                      <label>Día de Instalación</label>
-                      <select value={filterFecha} onChange={(e) => setFilterFecha(e.target.value)}>
-                        <option value="ALL">Cualquier Día</option>
-                        {availableFechas.map(f => <option key={f} value={f}>{f}</option>)}
-                      </select>
-                    </div>
-                    <button className="reset-btn-full" onClick={() => {
-                      setFilterSector('ALL');
-                      setFilterEquipo('ALL');
-                      setFilterFecha('ALL');
-                      setFilterPunto('ALL');
-                    }}>Limpiar Filtros</button>
-                  </div>
-                </div>
+                <p className="sidebar-title" style={{ marginTop: '0.5rem' }}>ADMINISTRACIÓN</p>
+                <NavLink to="/admin/dashboard" className={({ isActive }) => `cuadrilla-nav-btn ${isActive ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
+                  <BarChart2 size={18} /> Dashboard General
+                </NavLink>
+                <NavLink to="/admin/mapa" className={({ isActive }) => `cuadrilla-nav-btn ${isActive ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
+                  <Map size={18} /> Mapa de Puntos
+                </NavLink>
+                <NavLink to="/admin/sectores" className={({ isActive }) => `cuadrilla-nav-btn ${isActive ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
+                  <Map size={18} /> Zonas / Sectores
+                </NavLink>
+                <NavLink to="/admin/cuadrillas" className={({ isActive }) => `cuadrilla-nav-btn ${isActive ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
+                  <Users size={18} /> Cuadrillas
+                </NavLink>
+                <NavLink to="/admin/inventario" className={({ isActive }) => `cuadrilla-nav-btn ${isActive ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
+                  <Package size={18} /> Inventario Base
+                </NavLink>
+                <NavLink to="/admin/reglas" className={({ isActive }) => `cuadrilla-nav-btn ${isActive ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
+                  <Layers size={18} /> Reglas Generación
+                </NavLink>
               </>
             )}
-            
-            {session && (
-              <div className="sidebar-section" style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem', marginTop: 'auto' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--success)' }}>Sesión: {session.user.email}</span>
-                  <button onClick={handleLogout} className="reset-btn-full" style={{ background: 'transparent', borderColor: 'var(--error)', color: 'var(--error)' }}>
-                    <LogOut size={16} /> Cerrar Sesión
-                  </button>
+
+            <p className="sidebar-title" style={{ marginTop: '1.5rem' }}>OPERACIÓN</p>
+            <NavLink to="/operativo" className={({ isActive }) => `cuadrilla-nav-btn ${isActive ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
+              <Target size={18} /> Vista Operativa
+            </NavLink>
+
+            {location.pathname === '/operativo' && (
+              <div style={{ padding: '1rem', marginTop: '0.5rem', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                <div style={{ marginBottom: '1rem' }}>
+                  <h3 className="sidebar-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.75rem' }}>
+                    <Search size={14} /> Búsqueda Global
+                  </h3>
+                  <input 
+                    type="text" 
+                    className="splash-input" 
+                    placeholder="Buscar punto..."
+                    value={globalSearchQuery}
+                    onChange={(e) => setGlobalSearchQuery(e.target.value)}
+                    style={{ width: '100%', padding: '0.4rem', fontSize: '0.85rem' }}
+                  />
                 </div>
+
+                {!globalSearchQuery && (
+                  <>
+                    <h3 className="sidebar-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.75rem' }}>
+                      <HardHat size={14} /> Cuadrilla Activa
+                    </h3>
+                    <select 
+                      value={activeCuadrilla} 
+                      onChange={(e) => setActiveCuadrilla(e.target.value)}
+                      className="splash-input"
+                      style={{ width: '100%', marginBottom: '1rem', padding: '0.4rem', fontSize: '0.85rem' }}
+                    >
+                      {Array.from(new Set(Object.values(data).map(p => p.cuadrilla).filter(Boolean))).map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+
+                    <h3 className="sidebar-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.75rem' }}>
+                      <Filter size={14} /> Filtros
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div className="filter-group">
+                        <select value={filterSector} onChange={(e) => setFilterSector(e.target.value)} className="splash-input" style={{ width: '100%', padding: '0.4rem', fontSize: '0.8rem' }}>
+                          <option value="ALL">Todos los Sectores</option>
+                          {Array.from(new Set(Object.values(data).filter(loc => loc.cuadrilla === activeCuadrilla).map(p => p.sector).filter(Boolean))).map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                      <div className="filter-group">
+                        <select value={filterEquipo} onChange={(e) => setFilterEquipo(e.target.value)} className="splash-input" style={{ width: '100%', padding: '0.4rem', fontSize: '0.8rem' }}>
+                          <option value="ALL">Cualquier Estado</option>
+                          <option value="COMPLETADOS">Completados</option>
+                          <option value="OBSERVADOS">Con Observaciones</option>
+                          <option value="PENDIENTES">Pendientes</option>
+                        </select>
+                      </div>
+                      <div className="filter-group">
+                        <select value={filterFecha} onChange={(e) => setFilterFecha(e.target.value)} className="splash-input" style={{ width: '100%', padding: '0.4rem', fontSize: '0.8rem' }}>
+                          <option value="ALL">Cualquier Día</option>
+                          {Array.from(new Set(Object.values(data).filter(loc => loc.cuadrilla === activeCuadrilla).map(p => p.dia_programado).filter(Boolean))).map(f => <option key={f} value={f}>{f}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      onClick={() => { setFilterSector('ALL'); setFilterEquipo('ALL'); setFilterFecha('ALL'); setFilterPunto('ALL'); }}
+                      className="splash-btn secondary"
+                      style={{ width: '100%', marginTop: '1rem', padding: '0.4rem', fontSize: '0.8rem' }}
+                    >
+                      Limpiar Filtros
+                    </button>
+                  </>
+                )}
               </div>
             )}
-          </div>
-        </aside>
+          </nav>
+        </div>
 
-        <main className="main-content">
-          <header className="mobile-header">
-            <button className="menu-btn" onClick={() => setIsSidebarOpen(true)}>
-              <Menu size={24} />
-            </button>
-            <div className="mobile-header-title">
-              <Activity size={20} color="var(--primary)" />
-              <h2>Dashboard {session && viewMode === 'metrics' ? 'Métricas' : ''}</h2>
+        <div style={{ padding: '1rem', borderTop: '1px solid var(--border-light)', background: 'var(--bg-sidebar)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {session && (
+            <div style={{ display: 'flex', flexDirection: 'column', padding: '0.5rem', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Usuario</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }} title={session.user.email}>
+                {session.user.email}
+              </span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--primary)', marginTop: '0.2rem' }}>
+                {session.user.user_metadata?.role || 'Administrador'}
+              </span>
             </div>
-            {session && (
-              <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: 'var(--error)', padding: '0.5rem' }}>
-                <LogOut size={20} />
-              </button>
-            )}
+          )}
+          
+          {session && (
+            <button className="cuadrilla-nav-btn" onClick={() => supabase.auth.signOut()} style={{ color: 'var(--error)', justifyContent: 'center' }}>
+              <LogOut size={18} /> Cerrar Sesión
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="main-content" style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100vh', overflow: 'hidden' }}>
+        <header className="mobile-header">
+          <button className="menu-btn" onClick={() => setIsSidebarOpen(true)}>
+            <Menu size={24} />
+          </button>
+          <div className="mobile-header-title">
+            <Activity size={20} color="var(--primary)" />
+            <h2>{getHeaderTitle()}</h2>
+          </div>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
             <button 
               onClick={toggleTheme} 
               style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-main)',
-                padding: '0.25rem',
-                cursor: 'pointer',
-                display: 'flex',
-                marginLeft: 'auto',
-                marginRight: '1rem'
+                background: 'none', border: 'none', color: 'var(--text-main)', 
+                padding: '0.25rem', cursor: 'pointer', display: 'flex', marginRight: session ? '1rem' : '0'
               }}
             >
               {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            {viewMode === 'operative' && !isGlobalSearchActive && (
-              <div className="mobile-cuadrilla-badge">
-                {activeCuadrilla.replace('CUADRILLA-', 'C-')}
-              </div>
+            {session && (
+              <button onClick={() => supabase.auth.signOut()} style={{ background: 'none', border: 'none', color: 'var(--error)', padding: '0.5rem', cursor: 'pointer' }}>
+                <LogOut size={20} />
+              </button>
             )}
-          </header>
+          </div>
+        </header>
 
-          {viewMode === 'metrics' ? (
-            <AdminDashboard data={data} />
-          ) : isGlobalSearchActive ? (
-            <div className="main-scroll-area">
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Search size={24} color="var(--primary)" /> Resultados de Búsqueda Global
-                </h2>
-                <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                  Mostrando {globalSearchResults.length} resultado(s) para "{globalSearchQuery}"
-                </p>
-              </div>
-
-              {globalSearchResults.length > 0 ? (
-                <div className="locations-grid">
-                  {globalSearchResults.map((loc, idx) => {
-                    const dRaw = loc['FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO']?.split(' ')[0];
-                    const dayLabel = dRaw && dRaw !== '-' ? dateToDayIndex[dRaw] : null;
-                    return (
-                      <LocationCard 
-                        key={idx} 
-                        loc={loc} 
-                        dayLabel={dayLabel} 
-                        session={session} 
-                        onUpdatePunto={handleUpdatePunto} 
-                        cuadrillaGlobal={loc.cuadrillaPertenece}
-                      />
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="empty-state">
-                  <Search size={48} opacity={0.2} />
-                  <p>No se encontraron puntos que coincidan con la búsqueda.</p>
-                  <button className="reset-btn" onClick={() => setGlobalSearchQuery('')}>Borrar Búsqueda</button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="main-scroll-area">
-              <div className="kpi-grid">
-                <div className="kpi-card">
-                  <div className="kpi-icon" style={{color: 'var(--primary)'}}><MapPin size={24}/></div>
-                  <div className="kpi-info">
-                    <span className="kpi-val">{stats.statLocs}</span>
-                    <span className="kpi-lbl">Ubicaciones</span>
-                  </div>
-                </div>
-                <div className="kpi-card">
-                  <div className="kpi-icon" style={{color: 'var(--c-ptz)'}}><Camera size={24}/></div>
-                  <div className="kpi-info">
-                    <span className="kpi-val">{stats.statPtz}</span>
-                    <span className="kpi-lbl">Total PTZ</span>
-                  </div>
-                </div>
-                <div className="kpi-card">
-                  <div className="kpi-icon" style={{color: 'var(--c-multi)'}}><Video size={24}/></div>
-                  <div className="kpi-info">
-                    <span className="kpi-val">{stats.statMulti}</span>
-                    <span className="kpi-lbl">Multisensor</span>
-                  </div>
-                </div>
-                <div className="kpi-card">
-                  <div className="kpi-icon" style={{color: 'var(--c-altavoz)'}}><Volume2 size={24}/></div>
-                  <div className="kpi-info">
-                    <span className="kpi-val">{stats.statAltavoz}</span>
-                    <span className="kpi-lbl">Altavoces</span>
-                  </div>
-                </div>
-                <div className="kpi-card">
-                  <div className="kpi-icon" style={{color: 'var(--c-boton)'}}><ShieldAlert size={24}/></div>
-                  <div className="kpi-info">
-                    <span className="kpi-val">{stats.statBoton}</span>
-                    <span className="kpi-lbl">Botones</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="sectors-container">
-                {displaySectors.map(sector => {
-                  const sectorData = filteredSectors[sector];
-                  const instalaciones = sectorData.Instalaciones || [];
-                  const materiales = sectorData.Materiales || [];
-                  const isExpanded = expandedSector === sector;
-                  
-                  return (
-                    <div key={sector} className={`sector-accordion ${isExpanded ? 'expanded' : ''}`}>
-                      <div className="sector-header" onClick={() => toggleSector(sector)}>
-                        <div className="sector-title">
-                          <Target className="sector-icon" size={20} />
-                          <h2>{sector}</h2>
-                          {instalaciones.length > 0 && <span className="count-badge">{instalaciones.length} Loc.</span>}
-                        </div>
-                        <div className="chevron-icon">
-                          <ChevronDown size={24} />
-                        </div>
-                      </div>
-                      
-                      <div className="sector-body">
-                        <SectorGlobalLogistics materiales={materiales} sectorName={sector} />
-
-                        {instalaciones.length > 0 && (
-                          <div className="section-block">
-                            <h3 className="section-title"><MapPin size={18} /> Frentes Filtrados</h3>
-                            <div className="locations-grid">
-                              {instalaciones.map((loc, idx) => {
-                                const dRaw = loc['FECHAS DE INSTALACION CAMARAS PTZ Y MULTISENSOR , MEGAFONOS IP , BOTON DE PANICO']?.split(' ')[0];
-                                const dayLabel = dRaw && dRaw !== '-' ? dateToDayIndex[dRaw] : null;
-                                return <LocationCard key={idx} loc={loc} dayLabel={dayLabel} session={session} onUpdatePunto={handleUpdatePunto} />;
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-                {displaySectors.length === 0 && (
-                  <div className="empty-state">
-                    <Filter size={48} opacity={0.2} />
-                    <p>{!session ? 'Todos los puntos han sido completados o no hay resultados para estos filtros.' : 'No se encontraron resultados para los filtros seleccionados.'}</p>
-                    <button className="reset-btn" onClick={() => {
-                      setFilterSector('ALL');
-                      setFilterEquipo('ALL');
-                      setFilterFecha('ALL');
-                      setFilterPunto('ALL');
-                    }}>Limpiar Filtros</button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </main>
+        <Routes>
+          <Route path="/operativo" element={
+            <OperativoDashboard 
+              data={data} 
+              session={session} 
+              onUpdatePunto={handleUpdatePunto} 
+              cuadrillasMap={cuadrillasMap} 
+              filters={{
+                activeCuadrilla, filterSector, filterEquipo, filterFecha, filterPunto, globalSearchQuery, setActiveCuadrilla
+              }}
+            />
+          } />
+          
+          {/* Protected Routes */}
+          <Route path="/admin/dashboard" element={session ? <AdminDashboard data={data} /> : <Navigate to="/" replace />} />
+          <Route path="/admin/mapa" element={session ? <AdminMapDashboard data={data} onUpdatePunto={handleUpdatePunto} fetchData={fetchData} cuadrillasMap={cuadrillasMap} sectoresList={sectoresList} sectoresMap={sectoresMap} /> : <Navigate to="/" replace />} />
+          <Route path="/admin/sectores" element={session ? <SectoresManager sectoresList={sectoresList} fetchSectores={fetchSectores} /> : <Navigate to="/" replace />} />
+          <Route path="/admin/cuadrillas" element={session ? <CuadrillasManager cuadrillasList={cuadrillasList} fetchCuadrillas={fetchCuadrillas} /> : <Navigate to="/" replace />} />
+          <Route path="/admin/inventario" element={session ? <InventoryManager /> : <Navigate to="/" replace />} />
+          <Route path="/admin/reglas" element={session ? <RulesManager /> : <Navigate to="/" replace />} />
+          
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to={session ? "/admin/dashboard" : "/"} replace />} />
+        </Routes>
       </div>
-    </>
+    </div>
   );
-};
-
-export default App;
+}
