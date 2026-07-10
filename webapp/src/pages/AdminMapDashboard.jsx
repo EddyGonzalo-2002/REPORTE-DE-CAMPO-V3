@@ -2,8 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon } from 'react-leaflet';
 import L from 'leaflet';
 import { point, featureCollection, convex, clustersKmeans, buffer, lineString } from '@turf/turf';
-import { Eye, EyeOff, Activity, BrainCircuit } from 'lucide-react';
+import { Eye, EyeOff, Activity, BrainCircuit, Search } from 'lucide-react';
 import { LocationCard } from '../components/LocationCard';
+import { getPuntoName } from '../utils/helpers';
 import { SectorGlobalLogistics } from '../components/SectorGlobalLogistics';
 import { MapEventsHandler } from '../components/MapEventsHandler';
 
@@ -61,6 +62,7 @@ function recursiveBisection(points, maxCapacity) {
 export const AdminMapDashboard = ({ data, onUpdatePunto, fetchData, cuadrillasMap, sectoresList, sectoresMap }) => {
   const [showPolygons, setShowPolygons] = useState(true);
   const [selectedSectorFilter, setSelectedSectorFilter] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [clusteringMode, setClusteringMode] = useState(false);
   const [clusterConfigType, setClusterConfigType] = useState('pts_per_cluster');
   const [numClusters, setNumClusters] = useState(5);
@@ -77,15 +79,25 @@ export const AdminMapDashboard = ({ data, onUpdatePunto, fetchData, cuadrillasMa
     }).filter(p => p.isGeolocated);
   }, [data]);
 
+  const filteredPuntos = useMemo(() => {
+    return puntosList.filter(loc => {
+      if (selectedSectorFilter !== 'ALL' && loc.sector !== selectedSectorFilter) return false;
+      if (searchQuery.trim() !== '') {
+        const q = searchQuery.toLowerCase();
+        const puntoName = getPuntoName(loc).toLowerCase();
+        const destino = (loc.destino_esp || '').toLowerCase();
+        if (!puntoName.includes(q) && !destino.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [puntosList, selectedSectorFilter, searchQuery]);
+
   const renderPolygons = () => {
     debugPolygonsGenerated = 0;
-    if (!showPolygons || puntosList.length === 0) return null;
+    if (!showPolygons || filteredPuntos.length === 0) return null;
 
     if (clusteringMode) {
-      const ptsToCluster = puntosList.filter(p => {
-        if (selectedSectorFilter !== 'ALL' && p.sector !== selectedSectorFilter) return false;
-        return true;
-      });
+      const ptsToCluster = filteredPuntos;
 
       let maxCap = ptsPerCluster;
       if (clusterConfigType === 'num_clusters') {
@@ -202,7 +214,18 @@ export const AdminMapDashboard = ({ data, onUpdatePunto, fetchData, cuadrillasMa
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      <div style={{ position: 'absolute', top: 15, right: 15, zIndex: 1000, display: 'flex', gap: '0.75rem' }}>
+      <div style={{ position: 'absolute', top: 15, left: 50, zIndex: 1000, display: 'flex', alignItems: 'center', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-light)', padding: '0.4rem 0.8rem', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+        <Search size={18} style={{ color: 'var(--text-muted)', marginRight: '0.5rem' }} />
+        <input 
+          type="text" 
+          placeholder="Buscar punto o nombre..." 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '0.9rem', width: '220px' }}
+        />
+      </div>
+
+      <div style={{ position: 'absolute', top: 15, right: 15, zIndex: 1000, display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 'calc(100% - 320px)' }}>
         <select 
           value={selectedSectorFilter}
           onChange={(e) => setSelectedSectorFilter(e.target.value)}
@@ -274,9 +297,7 @@ export const AdminMapDashboard = ({ data, onUpdatePunto, fetchData, cuadrillasMa
       <MapContainer center={[-13.525, -71.968]} zoom={15} style={{ height: '100%', width: '100%', zIndex: 1 }}>
         <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
         {polyElements}
-        {puntosList.map(loc => {
-          if (selectedSectorFilter !== 'ALL' && loc.sector !== selectedSectorFilter) return null;
-          
+        {filteredPuntos.map(loc => {
           let mColor = '#3b82f6';
           if (clusteringMode) {
              // In clustering mode, markers keep a default or maybe we just leave them blue or we color them by cluster.
