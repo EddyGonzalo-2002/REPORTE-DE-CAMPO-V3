@@ -298,7 +298,7 @@ export const AdminMapDashboard = ({ data, onUpdatePunto, fetchData, cuadrillasMa
 
           return (
             <Marker key={loc.id} position={[loc.lat, loc.lng]} icon={markerIcon}>
-              <Popup maxWidth={350} minWidth={280} className="custom-popup">
+              <Popup maxWidth={300} minWidth={220} className="custom-popup">
                 <LocationCard loc={loc} session={true} onUpdatePunto={onUpdatePunto} cuadrillaGlobal={cuadrillasMap[loc.cuadrilla]?.display_name} isCompact={true} />
               </Popup>
             </Marker>
