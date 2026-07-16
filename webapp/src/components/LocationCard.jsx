@@ -14,6 +14,16 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
   const [showFullImage, setShowFullImage] = useState(false);
   const fileInputRef = useRef(null);
   
+  const [isEditingCoords, setIsEditingCoords] = useState(false);
+  const [tempLat, setTempLat] = useState('');
+  const [tempLng, setTempLng] = useState('');
+
+  const handleEditCoordsClick = () => {
+    setTempLat(loc.latitud || '');
+    setTempLng(loc.longitud || '');
+    setIsEditingCoords(true);
+  };
+  
   const ptz = loc.camara_ptz;
   const multi = loc.camara_multisensor;
   const altavoz = loc.altavoz_ip;
@@ -168,6 +178,63 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
         {altavoz && altavoz !== '0' && <div className="equipo-item altavoz"><Volume2 size={14}/> <span>Altavoz</span></div>}
         {boton && boton !== '0' && <div className="equipo-item boton"><ShieldAlert size={14}/> <span>Botón</span></div>}
       </div>
+
+      {session && (
+        <div style={{ padding: '0.5rem 1rem', borderBottom: '1px solid var(--border-light)' }}>
+          {!isEditingCoords ? (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              <span>📍 Lat: {loc.latitud || 'N/A'}, Lng: {loc.longitud || 'N/A'}</span>
+              <button 
+                onClick={handleEditCoordsClick}
+                style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, padding: 0 }}
+              >
+                Editar
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input 
+                  type="text" 
+                  value={tempLat} 
+                  onChange={e => setTempLat(e.target.value)} 
+                  placeholder="Latitud" 
+                  style={{ flex: 1, padding: '0.4rem', fontSize: '0.75rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-main)', minWidth: 0 }}
+                />
+                <input 
+                  type="text" 
+                  value={tempLng} 
+                  onChange={e => setTempLng(e.target.value)} 
+                  placeholder="Longitud" 
+                  style={{ flex: 1, padding: '0.4rem', fontSize: '0.75rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-main)', minWidth: 0 }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button 
+                  onClick={async () => {
+                    if (!tempLat || !tempLng) return;
+                    setIsUpdating(true);
+                    await onUpdatePunto(loc.id, { latitud: tempLat.replace('.', ','), longitud: tempLng.replace('.', ',') });
+                    setIsUpdating(false);
+                    setIsEditingCoords(false);
+                  }}
+                  disabled={isUpdating}
+                  style={{ flex: 1, padding: '0.4rem', fontSize: '0.75rem', fontWeight: 600, background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                >
+                  {isUpdating ? '...' : 'Guardar'}
+                </button>
+                <button 
+                  onClick={() => setIsEditingCoords(false)}
+                  disabled={isUpdating}
+                  style={{ flex: 1, padding: '0.4rem', fontSize: '0.75rem', fontWeight: 600, background: 'transparent', color: 'var(--text-main)', border: '1px solid var(--border-light)', borderRadius: '6px', cursor: 'pointer' }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {!isCompact && (
         <div className="tech-specs">
