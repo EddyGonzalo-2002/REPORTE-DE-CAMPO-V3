@@ -336,7 +336,7 @@ export const AdminMapDashboard = ({ data, onUpdatePunto, fetchData, cuadrillasMa
       </div>
 
       <MapContainer center={[-13.525, -71.968]} zoom={15} style={{ height: '100%', width: '100%', zIndex: 1 }}>
-        <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+        <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=cb1_4gd6_1_e6330e749037f892b8269074" />
         {polyElements}
         {filteredPuntos.map(loc => {
           let mColor = '#3b82f6';
