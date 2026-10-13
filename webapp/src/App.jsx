@@ -4,7 +4,7 @@ import {
   ChevronDown, MapPin, Package, CalendarDays, Camera, 
   Video, Volume2, ShieldAlert, Wifi, Link2, Layers, 
   HardHat, Box, Cable, Zap, Server, Filter, Activity,
-  Target, Menu, X, Navigation, Sun, Moon, CheckSquare, Square, LogOut, LogIn, Download, Map, BarChart2, Award, Search, AlertTriangle, Users
+  Target, Menu, X, Navigation, Sun, Moon, CheckSquare, Square, LogOut, LogIn, Download, Map, BarChart2, Award, Search, AlertTriangle, Users, Wrench
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { SplashScreen } from './components/SplashScreen';
@@ -30,12 +30,17 @@ export default function App() {
   const [sessionLoading, setSessionLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  const [appMode, setAppMode] = useState(() => localStorage.getItem('appMode') || 'INSTALACION');
   
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+
+  useEffect(() => {
+    localStorage.setItem('appMode', appMode);
+  }, [appMode]);
   
   // Operativo State
   const [activeCuadrilla, setActiveCuadrilla] = useState('');
@@ -164,6 +169,22 @@ export default function App() {
     return session ? <Navigate to="/admin/dashboard" replace /> : <SplashScreen onGuest={() => navigate('/operativo')} session={session} />;
   }
 
+  // Cuadrillas disponibles según modo
+  const cuadrillasDisponibles = useMemo(() => {
+    if (appMode === 'MANTENIMIENTO') {
+      const fromPoints = Object.values(data).map(p => p.cuadrilla_mantenimiento).filter(Boolean);
+      const fromList = (cuadrillasList || []).filter(c => c.tipo === 'MANTENIMIENTO' || !c.tipo).map(c => c.internal_name);
+      return Array.from(new Set([...fromPoints, ...fromList]));
+    }
+    return Array.from(new Set(Object.values(data).map(p => p.cuadrilla).filter(Boolean)));
+  }, [appMode, data, cuadrillasList]);
+
+  useEffect(() => {
+    if (cuadrillasDisponibles.length > 0 && !cuadrillasDisponibles.includes(activeCuadrilla)) {
+      setActiveCuadrilla(cuadrillasDisponibles[0]);
+    }
+  }, [appMode, cuadrillasDisponibles, activeCuadrilla]);
+
   return (
     <div className="app-layout">
       {/* Sidebar */}
@@ -187,6 +208,54 @@ export default function App() {
           <button className="menu-btn" onClick={() => setIsSidebarOpen(false)} style={{ position: 'absolute', right: '0', top: '50%', transform: 'translateY(-50%)', display: isSidebarOpen ? 'block' : 'none', background: 'none', border: 'none', color: 'var(--text-main)' }}>
             <X size={20} />
           </button>
+        </div>
+
+        {/* Switch Global: Instalación vs Mantenimiento */}
+        <div style={{ padding: '0.75rem 1rem 0.25rem 1rem' }}>
+          <div style={{ display: 'flex', background: 'var(--bg-card)', padding: '0.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+            <button
+              onClick={() => setAppMode('INSTALACION')}
+              style={{
+                flex: 1,
+                padding: '0.45rem 0.4rem',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: appMode === 'INSTALACION' ? 'var(--primary)' : 'transparent',
+                color: appMode === 'INSTALACION' ? '#fff' : 'var(--text-muted)',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.3rem'
+              }}
+            >
+              🛠️ Instalación
+            </button>
+            <button
+              onClick={() => setAppMode('MANTENIMIENTO')}
+              style={{
+                flex: 1,
+                padding: '0.45rem 0.4rem',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: appMode === 'MANTENIMIENTO' ? 'var(--secondary)' : 'transparent',
+                color: appMode === 'MANTENIMIENTO' ? '#fff' : 'var(--text-muted)',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.3rem'
+              }}
+            >
+              🔧 Mantenimiento
+            </button>
+          </div>
         </div>
         
         <div className="sidebar-scroll">
@@ -217,7 +286,7 @@ export default function App() {
 
             <p className="sidebar-title" style={{ marginTop: '1.5rem' }}>OPERACIÓN</p>
             <NavLink to="/operativo" className={({ isActive }) => `cuadrilla-nav-btn ${isActive ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
-              <Target size={18} /> Vista Operativa
+              <Target size={18} /> Vista Operativa ({appMode === 'MANTENIMIENTO' ? 'Mantenimiento' : 'Instalación'})
             </NavLink>
 
             {location.pathname === '/operativo' && (
@@ -239,7 +308,7 @@ export default function App() {
                 {!globalSearchQuery && (
                   <>
                     <h3 className="sidebar-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.75rem' }}>
-                      <HardHat size={14} /> Cuadrilla Activa
+                      <HardHat size={14} /> Cuadrilla Activa {appMode === 'MANTENIMIENTO' ? '(Mantenimiento)' : ''}
                     </h3>
                     <select 
                       value={activeCuadrilla} 
@@ -247,7 +316,12 @@ export default function App() {
                       className="splash-input"
                       style={{ width: '100%', marginBottom: '1rem', padding: '0.4rem', fontSize: '0.85rem' }}
                     >
-                      {Array.from(new Set(Object.values(data).map(p => p.cuadrilla).filter(Boolean))).map(c => <option key={c} value={c}>{c}</option>)}
+                      {cuadrillasDisponibles.map(c => (
+                        <option key={c} value={c}>
+                          {cuadrillasMap[c]?.display_name || c}
+                        </option>
+                      ))}
+                      {cuadrillasDisponibles.length === 0 && <option value="">Sin Cuadrillas</option>}
                     </select>
 
                     <h3 className="sidebar-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.75rem' }}>
@@ -257,7 +331,12 @@ export default function App() {
                       <div className="filter-group">
                         <select value={filterSector} onChange={(e) => setFilterSector(e.target.value)} className="splash-input" style={{ width: '100%', padding: '0.4rem', fontSize: '0.8rem' }}>
                           <option value="ALL">Todos los Sectores</option>
-                          {Array.from(new Set(Object.values(data).filter(loc => loc.cuadrilla === activeCuadrilla).map(p => p.sector).filter(Boolean))).map(s => <option key={s} value={s}>{s}</option>)}
+                          {Array.from(new Set(
+                            Object.values(data)
+                              .filter(loc => (appMode === 'MANTENIMIENTO' ? loc.cuadrilla_mantenimiento : loc.cuadrilla) === activeCuadrilla)
+                              .map(p => p.sector)
+                              .filter(Boolean)
+                          )).map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                       </div>
                       {session && (
@@ -273,7 +352,12 @@ export default function App() {
                       <div className="filter-group">
                         <select value={filterFecha} onChange={(e) => setFilterFecha(e.target.value)} className="splash-input" style={{ width: '100%', padding: '0.4rem', fontSize: '0.8rem' }}>
                           <option value="ALL">Cualquier Día</option>
-                          {Array.from(new Set(Object.values(data).filter(loc => loc.cuadrilla === activeCuadrilla).map(p => p.dia_programado).filter(Boolean))).map(f => <option key={f} value={f}>{f}</option>)}
+                          {Array.from(new Set(
+                            Object.values(data)
+                              .filter(loc => (appMode === 'MANTENIMIENTO' ? loc.cuadrilla_mantenimiento : loc.cuadrilla) === activeCuadrilla)
+                              .map(p => p.dia_programado)
+                              .filter(Boolean)
+                          )).map(f => <option key={f} value={f}>{f}</option>)}
                         </select>
                       </div>
                     </div>
@@ -354,14 +438,16 @@ export default function App() {
               filters={{
                 activeCuadrilla, filterSector, filterEquipo, filterFecha, filterPunto, globalSearchQuery, setActiveCuadrilla
               }}
+              appMode={appMode}
+              cuadrillasList={cuadrillasList}
             />
           } />
           
           {/* Protected Routes */}
-          <Route path="/admin/dashboard" element={session ? <AdminDashboard data={data} /> : <Navigate to="/" replace />} />
-          <Route path="/admin/mapa" element={session ? <AdminMapDashboard data={data} onUpdatePunto={handleUpdatePunto} fetchData={fetchData} cuadrillasMap={cuadrillasMap} sectoresList={sectoresList} sectoresMap={sectoresMap} /> : <Navigate to="/" replace />} />
+          <Route path="/admin/dashboard" element={session ? <AdminDashboard data={data} appMode={appMode} /> : <Navigate to="/" replace />} />
+          <Route path="/admin/mapa" element={session ? <AdminMapDashboard data={data} onUpdatePunto={handleUpdatePunto} fetchData={fetchData} cuadrillasMap={cuadrillasMap} sectoresList={sectoresList} sectoresMap={sectoresMap} appMode={appMode} cuadrillasList={cuadrillasList} /> : <Navigate to="/" replace />} />
           <Route path="/admin/sectores" element={session ? <SectoresManager sectoresList={sectoresList} fetchSectores={fetchSectores} /> : <Navigate to="/" replace />} />
-          <Route path="/admin/cuadrillas" element={session ? <CuadrillasManager cuadrillasList={cuadrillasList} fetchCuadrillas={fetchCuadrillas} /> : <Navigate to="/" replace />} />
+          <Route path="/admin/cuadrillas" element={session ? <CuadrillasManager cuadrillasList={cuadrillasList} fetchCuadrillas={fetchCuadrillas} data={data} fetchData={fetchData} sectoresList={sectoresList} /> : <Navigate to="/" replace />} />
           <Route path="/admin/inventario" element={session ? <InventoryManager /> : <Navigate to="/" replace />} />
           <Route path="/admin/reglas" element={session ? <RulesManager /> : <Navigate to="/" replace />} />
           

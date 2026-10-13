@@ -3,7 +3,8 @@ import { Search, Filter, HardHat, Target, MapPin, Camera, Video, Volume2, Shield
 import { LocationCard } from '../components/LocationCard';
 import { SectorGlobalLogistics } from '../components/SectorGlobalLogistics';
 
-export const OperativoDashboard = ({ data, session, onUpdatePunto, cuadrillasMap, filters }) => {
+export const OperativoDashboard = ({ data, session, onUpdatePunto, cuadrillasMap, filters, appMode = 'INSTALACION', cuadrillasList = [] }) => {
+  const isMantenimiento = appMode === 'MANTENIMIENTO';
   const {
     activeCuadrilla, filterSector, filterEquipo, filterFecha, filterPunto, globalSearchQuery, setActiveCuadrilla
   } = filters;
@@ -11,10 +12,19 @@ export const OperativoDashboard = ({ data, session, onUpdatePunto, cuadrillasMap
   const [expandedSector, setExpandedSector] = useState(null);
 
   const puntosList = Object.values(data);
-  const cuadrillas = Array.from(new Set(puntosList.map(p => p.cuadrilla).filter(Boolean)));
+  const cuadrillas = useMemo(() => {
+    if (isMantenimiento) {
+      const fromPoints = puntosList.map(p => p.cuadrilla_mantenimiento).filter(Boolean);
+      const fromList = (cuadrillasList || [])
+        .filter(c => c.tipo === 'MANTENIMIENTO' || !c.tipo || c.is_active)
+        .map(c => c.internal_name);
+      return Array.from(new Set([...fromPoints, ...fromList]));
+    }
+    return Array.from(new Set(puntosList.map(p => p.cuadrilla).filter(Boolean)));
+  }, [isMantenimiento, puntosList, cuadrillasList]);
   
   React.useEffect(() => {
-    if (!activeCuadrilla && cuadrillas.length > 0 && setActiveCuadrilla) {
+    if ((!activeCuadrilla || !cuadrillas.includes(activeCuadrilla)) && cuadrillas.length > 0 && setActiveCuadrilla) {
       setActiveCuadrilla(cuadrillas[0]);
     }
   }, [activeCuadrilla, cuadrillas, setActiveCuadrilla]);
@@ -36,8 +46,13 @@ export const OperativoDashboard = ({ data, session, onUpdatePunto, cuadrillasMap
 
   // 2. Filtros de Cuadrilla Activa
   const puntosDeCuadrilla = useMemo(() => {
-    return puntosList.filter(loc => loc.cuadrilla === activeCuadrilla);
-  }, [puntosList, activeCuadrilla]);
+    return puntosList.filter(loc => {
+      if (isMantenimiento) {
+        return loc.cuadrilla_mantenimiento === activeCuadrilla;
+      }
+      return loc.cuadrilla === activeCuadrilla;
+    });
+  }, [puntosList, activeCuadrilla, isMantenimiento]);
 
   // Extraer opciones de filtros
   const availableSectors = Array.from(new Set(puntosDeCuadrilla.map(p => p.sector).filter(Boolean)));
@@ -61,19 +76,26 @@ export const OperativoDashboard = ({ data, session, onUpdatePunto, cuadrillasMap
       }
       
       // Guest restriction: only show pending points
-      if (!session && (loc.completado || loc.observado)) {
-        return false;
+      if (!session) {
+        if (isMantenimiento && (loc.mantenimiento_completado || loc.mantenimiento_observado)) return false;
+        if (!isMantenimiento && (loc.completado || loc.observado)) return false;
       }
 
       // Admin filter
       if (session && filterEquipo !== 'ALL') {
-        if (filterEquipo === 'COMPLETADOS' && !loc.completado) return false;
-        if (filterEquipo === 'OBSERVADOS' && !loc.observado) return false;
-        if (filterEquipo === 'PENDIENTES' && (loc.completado || loc.observado)) return false;
+        if (isMantenimiento) {
+          if (filterEquipo === 'COMPLETADOS' && !loc.mantenimiento_completado) return false;
+          if (filterEquipo === 'OBSERVADOS' && !loc.mantenimiento_observado) return false;
+          if (filterEquipo === 'PENDIENTES' && (loc.mantenimiento_completado || loc.mantenimiento_observado)) return false;
+        } else {
+          if (filterEquipo === 'COMPLETADOS' && !loc.completado) return false;
+          if (filterEquipo === 'OBSERVADOS' && !loc.observado) return false;
+          if (filterEquipo === 'PENDIENTES' && (loc.completado || loc.observado)) return false;
+        }
       }
       return true;
     });
-  }, [puntosDeCuadrilla, filterSector, filterFecha, filterPunto, filterEquipo]);
+  }, [puntosDeCuadrilla, filterSector, filterFecha, filterPunto, filterEquipo, session, isMantenimiento]);
 
   // Agrupar por sector
   const sectorsData = useMemo(() => {
@@ -120,7 +142,15 @@ export const OperativoDashboard = ({ data, session, onUpdatePunto, cuadrillasMap
             </h2>
             <div className="locations-grid">
               {globalSearchResults.map(loc => (
-                <LocationCard key={loc.id} loc={loc} session={session} onUpdatePunto={onUpdatePunto} cuadrillaGlobal={cuadrillasMap[loc.cuadrilla]?.display_name} />
+                <LocationCard 
+                  key={loc.id} 
+                  loc={loc} 
+                  session={session} 
+                  onUpdatePunto={onUpdatePunto} 
+                  cuadrillaGlobal={cuadrillasMap[isMantenimiento ? loc.cuadrilla_mantenimiento : loc.cuadrilla]?.display_name} 
+                  appMode={appMode}
+                  cuadrillasList={cuadrillasList}
+                />
               ))}
             </div>
             {globalSearchResults.length === 0 && <p>No se encontraron resultados.</p>}
@@ -173,10 +203,18 @@ export const OperativoDashboard = ({ data, session, onUpdatePunto, cuadrillasMap
                     
                     {isExpanded && (
                       <div className="sector-body">
-                        <SectorGlobalLogistics materiales={materiales} sectorName={sector} />
+                        {!isMantenimiento && <SectorGlobalLogistics materiales={materiales} sectorName={sector} />}
                         <div className="locations-grid">
                           {instalaciones.map(loc => (
-                            <LocationCard key={loc.id} loc={loc} session={session} onUpdatePunto={onUpdatePunto} cuadrillaGlobal={cuadrillasMap[loc.cuadrilla]?.display_name} />
+                            <LocationCard 
+                              key={loc.id} 
+                              loc={loc} 
+                              session={session} 
+                              onUpdatePunto={onUpdatePunto} 
+                              cuadrillaGlobal={cuadrillasMap[isMantenimiento ? loc.cuadrilla_mantenimiento : loc.cuadrilla]?.display_name} 
+                              appMode={appMode}
+                              cuadrillasList={cuadrillasList}
+                            />
                           ))}
                         </div>
                       </div>

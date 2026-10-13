@@ -59,7 +59,7 @@ function recursiveBisection(points, maxCapacity) {
   return { features };
 }
 
-export const AdminMapDashboard = ({ data, onUpdatePunto, fetchData, cuadrillasMap, sectoresList, sectoresMap }) => {
+export const AdminMapDashboard = ({ data, onUpdatePunto, fetchData, cuadrillasMap, sectoresList, sectoresMap, appMode = 'INSTALACION', cuadrillasList = [] }) => {
   const [showPolygons, setShowPolygons] = useState(true);
   const [selectedSectorFilter, setSelectedSectorFilter] = useState('ALL');
   const [showSectorDropdown, setShowSectorDropdown] = useState(false);
@@ -376,7 +376,15 @@ export const AdminMapDashboard = ({ data, onUpdatePunto, fetchData, cuadrillasMa
               }}
             >
               <Popup maxWidth={300} minWidth={220} className="custom-popup">
-                <LocationCard loc={loc} session={true} onUpdatePunto={onUpdatePunto} cuadrillaGlobal={cuadrillasMap[loc.cuadrilla]?.display_name} isCompact={true} />
+                <LocationCard 
+                  loc={loc} 
+                  session={true} 
+                  onUpdatePunto={onUpdatePunto} 
+                  cuadrillaGlobal={cuadrillasMap[appMode === 'MANTENIMIENTO' ? loc.cuadrilla_mantenimiento : loc.cuadrilla]?.display_name} 
+                  isCompact={true}
+                  appMode={appMode}
+                  cuadrillasList={cuadrillasList}
+                />
               </Popup>
             </Marker>
           );

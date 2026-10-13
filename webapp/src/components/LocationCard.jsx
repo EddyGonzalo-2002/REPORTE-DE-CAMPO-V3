@@ -2,11 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Camera, Video, Volume2, ShieldAlert, Wifi, Link2, Layers, HardHat, Package, ChevronDown, Map, Navigation, CheckSquare, Square, AlertTriangle, Download, Image as ImageIcon, Loader, X } from 'lucide-react';
+import { Camera, Video, Volume2, ShieldAlert, Wifi, Link2, Layers, HardHat, Package, ChevronDown, Map, Navigation, CheckSquare, Square, AlertTriangle, Download, Image as ImageIcon, Loader, X, Wrench } from 'lucide-react';
 import { getMaterialIcon, getPuntoName, compressImageToWebp } from '../utils/helpers';
 import { supabase } from '../supabaseClient';
 
-export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaGlobal, isCompact = false }) => {
+export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaGlobal, isCompact = false, appMode = 'INSTALACION', cuadrillasList = [] }) => {
+  const isMantenimiento = appMode === 'MANTENIMIENTO';
   const [showLogistica, setShowLogistica] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUploadingFoto, setIsUploadingFoto] = useState(false);
@@ -34,20 +35,37 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
   const handleToggleCompletado = async () => {
     if (!session) return;
     setIsUpdating(true);
-    const isNowCompleted = !loc.completado;
-    const updateData = { completado: isNowCompleted };
-    if (isNowCompleted) updateData.observado = false;
-    await onUpdatePunto(loc.id, updateData);
+    if (isMantenimiento) {
+      const isNowCompleted = !loc.mantenimiento_completado;
+      const updateData = { 
+        mantenimiento_completado: isNowCompleted,
+        mantenimiento_fecha: isNowCompleted ? new Date().toISOString() : null
+      };
+      if (isNowCompleted) updateData.mantenimiento_observado = false;
+      await onUpdatePunto(loc.id, updateData);
+    } else {
+      const isNowCompleted = !loc.completado;
+      const updateData = { completado: isNowCompleted };
+      if (isNowCompleted) updateData.observado = false;
+      await onUpdatePunto(loc.id, updateData);
+    }
     setIsUpdating(false);
   };
 
   const handleToggleObservado = async () => {
     if (!session) return;
     setIsUpdating(true);
-    const isNowObservado = !loc.observado;
-    const updateData = { observado: isNowObservado };
-    if (isNowObservado) updateData.completado = false;
-    await onUpdatePunto(loc.id, updateData);
+    if (isMantenimiento) {
+      const isNowObservado = !loc.mantenimiento_observado;
+      const updateData = { mantenimiento_observado: isNowObservado };
+      if (isNowObservado) updateData.mantenimiento_completado = false;
+      await onUpdatePunto(loc.id, updateData);
+    } else {
+      const isNowObservado = !loc.observado;
+      const updateData = { observado: isNowObservado };
+      if (isNowObservado) updateData.completado = false;
+      await onUpdatePunto(loc.id, updateData);
+    }
     setIsUpdating(false);
   };
 
@@ -129,26 +147,29 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
     }
   };
 
+  let isCompleted = isMantenimiento ? loc.mantenimiento_completado : loc.completado;
+  let isObservado = isMantenimiento ? loc.mantenimiento_observado : loc.observado;
+
   let cardStatusClass = '';
-  if (loc.observado) cardStatusClass = 'observado';
-  else if (loc.completado) cardStatusClass = 'completed';
+  if (isObservado) cardStatusClass = 'observado';
+  else if (isCompleted) cardStatusClass = 'completed';
 
   return (
     <div className={`location-card ${cardStatusClass}`} style={{ 
-      opacity: (loc.completado || loc.observado) ? 0.8 : 1,
-      borderColor: loc.observado ? 'rgba(239, 68, 68, 0.4)' : undefined,
-      boxShadow: loc.observado ? '0 4px 20px rgba(239, 68, 68, 0.1)' : undefined,
+      opacity: (isCompleted || isObservado) ? 0.8 : 1,
+      borderColor: isObservado ? 'rgba(239, 68, 68, 0.4)' : undefined,
+      boxShadow: isObservado ? '0 4px 20px rgba(239, 68, 68, 0.1)' : undefined,
       overflow: 'hidden'
     }}>
       
       {/* Banner de Foto */}
-      {loc.foto_url && (
+      {(loc.mantenimiento_foto_url || loc.foto_url) && (
         <div 
           onClick={() => setShowFullImage(true)}
           style={{
             width: '100%',
             height: isCompact ? '120px' : '200px',
-            backgroundImage: `url(${loc.foto_url})`,
+            backgroundImage: `url(${loc.mantenimiento_foto_url || loc.foto_url})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             borderBottom: '1px solid var(--border-light)',
@@ -157,18 +178,87 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
         />
       )}
 
-      <div className="loc-card-header" style={{ paddingTop: loc.foto_url ? '1rem' : undefined }}>
+      <div className="loc-card-header" style={{ paddingTop: (loc.mantenimiento_foto_url || loc.foto_url) ? '1rem' : undefined }}>
         <div className="loc-destino">
           <span className="destino-lbl">Punto: {getPuntoName(loc)}</span>
           <h4>{loc.destino_esp}</h4>
-          {cuadrillaGlobal && (
-            <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600, marginTop: '0.2rem', display: 'inline-block' }}>
-              <HardHat size={12} style={{ display: 'inline', verticalAlign: 'text-bottom' }} /> {cuadrillaGlobal}
-            </span>
+          
+          {/* Cuadrilla Info */}
+          {!isMantenimiento ? (
+            cuadrillaGlobal && (
+              <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600, marginTop: '0.2rem', display: 'inline-block' }}>
+                <HardHat size={12} style={{ display: 'inline', verticalAlign: 'text-bottom' }} /> {cuadrillaGlobal}
+              </span>
+            )
+          ) : (
+            <div style={{ marginTop: '0.3rem' }}>
+              <span style={{ fontSize: '0.75rem', color: loc.cuadrilla_mantenimiento ? 'var(--secondary)' : 'var(--text-muted)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                <Wrench size={12} /> {loc.cuadrilla_mantenimiento || 'Sin Cuadrilla Asignada'}
+              </span>
+
+              {/* Selector de Reasignación de Cuadrilla y Tipo para Admin */}
+              {session && (
+                <div style={{ marginTop: '0.4rem', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4rem' }}>
+                  <select
+                    value={loc.cuadrilla_mantenimiento || ''}
+                    onChange={(e) => onUpdatePunto(loc.id, { cuadrilla_mantenimiento: e.target.value })}
+                    style={{
+                      fontSize: '0.72rem',
+                      background: 'var(--bg-main)',
+                      color: 'var(--text-main)',
+                      border: '1px solid var(--border-light)',
+                      borderRadius: '6px',
+                      padding: '2px 6px',
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
+                    title="Asignar Cuadrilla de Mantenimiento"
+                  >
+                    <option value="">-- Asignar Cuadrilla --</option>
+                    {cuadrillasList.map(c => (
+                      <option key={c.id || c.internal_name} value={c.internal_name}>
+                        {c.display_name || c.internal_name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={loc.mantenimiento_tipo || 'PREVENTIVO'}
+                    onChange={(e) => onUpdatePunto(loc.id, { mantenimiento_tipo: e.target.value })}
+                    style={{
+                      fontSize: '0.72rem',
+                      background: 'var(--bg-main)',
+                      color: 'var(--text-main)',
+                      border: '1px solid var(--border-light)',
+                      borderRadius: '6px',
+                      padding: '2px 6px',
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
+                    title="Tipo de Mantenimiento"
+                  >
+                    <option value="PREVENTIVO">Preventivo</option>
+                    <option value="CORRECTIVO">Correctivo</option>
+                  </select>
+                </div>
+              )}
+            </div>
           )}
         </div>
-        <div className="frente-badge" style={{ background: loc.observado ? 'var(--error)' : undefined }}>
-          {loc.observado ? 'OBSERVADO' : `Frente ${loc.frente}`}
+
+        {/* Badge de Estado */}
+        <div 
+          className="frente-badge" 
+          style={{ 
+            background: isMantenimiento
+              ? (isObservado ? 'var(--error)' : isCompleted ? 'var(--success)' : 'var(--secondary)')
+              : (isObservado ? 'var(--error)' : undefined) 
+          }}
+        >
+          {isMantenimiento 
+            ? (isObservado ? 'OBSERVADO MANT.' : isCompleted ? 'MANT. REALIZADO' : (loc.mantenimiento_tipo || 'PREVENTIVO'))
+            : (loc.observado ? 'OBSERVADO' : `Frente ${loc.frente}`)
+          }
         </div>
       </div>
       
@@ -352,10 +442,10 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
               disabled={isUpdating}
               className="map-nav-btn"
               style={{ 
-                background: loc.completado ? 'var(--c-ptz)' : 'var(--overlay-w-10)', 
+                background: isCompleted ? 'var(--c-ptz)' : 'var(--overlay-w-10)', 
                 cursor: 'pointer',
-                border: loc.completado ? 'none' : '1px solid var(--border-light)', 
-                color: loc.completado ? '#fff' : 'var(--text-main)',
+                border: isCompleted ? 'none' : '1px solid var(--border-light)', 
+                color: isCompleted ? '#fff' : 'var(--text-main)',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
@@ -363,10 +453,16 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
                 padding: isCompact ? '0.5rem' : '0.75rem 1rem',
                 flex: isCompact ? '1' : 'auto'
               }}
-              title={loc.completado ? 'Completado' : 'Marcar Completado'}
+              title={isMantenimiento ? (isCompleted ? 'Mantenimiento Completado' : 'Marcar Mantenimiento Realizado') : (isCompleted ? 'Completado' : 'Marcar Completado')}
             >
-              {loc.completado ? <CheckSquare size={16} /> : <Square size={16} />}
-              {!isCompact && (isUpdating ? '...' : loc.completado ? 'Completado' : 'Marcar Completado')}
+              {isCompleted ? <CheckSquare size={16} /> : <Square size={16} />}
+              {!isCompact && (
+                isUpdating 
+                  ? '...' 
+                  : isMantenimiento 
+                    ? (isCompleted ? 'Mantenimiento OK' : 'Marcar Realizado')
+                    : (isCompleted ? 'Completado' : 'Marcar Completado')
+              )}
             </button>
 
             <button 
@@ -374,10 +470,10 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
               disabled={isUpdating}
               className="map-nav-btn"
               style={{ 
-                background: loc.observado ? 'var(--error)' : 'var(--overlay-w-10)', 
+                background: isObservado ? 'var(--error)' : 'var(--overlay-w-10)', 
                 cursor: 'pointer',
-                border: loc.observado ? 'none' : '1px solid var(--border-light)', 
-                color: loc.observado ? '#fff' : 'var(--error)',
+                border: isObservado ? 'none' : '1px solid var(--border-light)', 
+                color: isObservado ? '#fff' : 'var(--error)',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
@@ -385,10 +481,16 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
                 padding: isCompact ? '0.5rem' : '0.75rem 1rem',
                 flex: isCompact ? '1' : 'auto'
               }}
-              title={loc.observado ? 'Observado (Desmarcar)' : 'Marcar Observado'}
+              title={isObservado ? 'Observado (Desmarcar)' : 'Marcar Observado'}
             >
               <AlertTriangle size={16} />
-              {!isCompact && (isUpdating ? '...' : loc.observado ? 'Observado (Desmarcar)' : 'Marcar Observado')}
+              {!isCompact && (
+                isUpdating 
+                  ? '...' 
+                  : isMantenimiento
+                    ? (isObservado ? 'Observado Mant.' : 'Marcar Observado')
+                    : (isObservado ? 'Observado' : 'Marcar Observado')
+              )}
             </button>
             
             {isCompact && (
@@ -413,10 +515,35 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
                 {isUploadingFoto ? <Loader size={16} className="spin" /> : <ImageIcon size={16} />}
               </button>
             )}
+
+            {isMantenimiento && !isCompact && (
+              <div style={{ width: '100%', marginTop: '0.4rem' }}>
+                <input 
+                  type="text" 
+                  placeholder="Nota u observación de mantenimiento..."
+                  defaultValue={loc.mantenimiento_notas || ''}
+                  onBlur={(e) => {
+                    if (e.target.value !== (loc.mantenimiento_notas || '')) {
+                      onUpdatePunto(loc.id, { mantenimiento_notas: e.target.value });
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '0.4rem 0.6rem',
+                    fontSize: '0.8rem',
+                    background: 'var(--bg-main)',
+                    color: 'var(--text-main)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: '6px',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+            )}
           </>
         )}
 
-        {!isCompact && (
+        {!isCompact && !isMantenimiento && (
           <button 
             onClick={exportPointPDF}
             className="map-nav-btn"
@@ -427,7 +554,7 @@ export const LocationCard = ({ loc, dayLabel, session, onUpdatePunto, cuadrillaG
         )}
       </div>
 
-      {!isCompact && visibleMaterials.length > 0 && (
+      {!isMantenimiento && !isCompact && visibleMaterials.length > 0 && (
         <div className="loc-materials-container">
           <div 
             className={`loc-materials-toggle ${showLogistica ? 'open' : ''}`} 

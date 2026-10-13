@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
-import { BarChart2, CheckSquare, Target, Zap, Server, Activity, Award, AlertTriangle, MapPin, Camera, Video, Volume2, ShieldAlert, ChevronDown, X } from 'lucide-react';
+import { BarChart2, CheckSquare, Target, Zap, Server, Activity, Award, AlertTriangle, MapPin, Camera, Video, Volume2, ShieldAlert, ChevronDown, X, Wrench, Settings } from 'lucide-react';
 import { getPuntoName } from '../utils/helpers';
 
-export const AdminDashboard = ({ data }) => {
+export const AdminDashboard = ({ data, appMode = 'INSTALACION' }) => {
+  const [activeTab, setActiveTab] = useState(appMode || 'INSTALACION');
   const [expandedCuadrilla, setExpandedCuadrilla] = useState(null);
   const [showObservadosModal, setShowObservadosModal] = useState(false);
+  const [showObservadosMantModal, setShowObservadosMantModal] = useState(false);
 
   if (!data) return null;
 
+  // ==========================================
+  // 1. MÉTRICAS DE FASE INSTALACIÓN
+  // ==========================================
   const rankings = [];
   let totalCompletados = 0;
   let totalObservados = 0;
@@ -60,132 +65,367 @@ export const AdminDashboard = ({ data }) => {
 
   rankings.sort((a,b) => b.completados - a.completados);
 
+  // ==========================================
+  // 2. MÉTRICAS DE FASE MANTENIMIENTO
+  // ==========================================
+  const rankingsMant = [];
+  let totalAsignadosMant = 0;
+  let totalCompletadosMant = 0;
+  let totalObservadosMant = 0;
+  let preventivosCompletados = 0;
+  let correctivosCompletados = 0;
+  const observadosDetalleMant = [];
+
+  const puntosPorCuadrillaMant = {};
+  Object.values(data).forEach(loc => {
+    if (loc.cuadrilla_mantenimiento) {
+      totalAsignadosMant++;
+      const cm = loc.cuadrilla_mantenimiento;
+      if (!puntosPorCuadrillaMant[cm]) puntosPorCuadrillaMant[cm] = [];
+      puntosPorCuadrillaMant[cm].push(loc);
+    }
+  });
+
+  Object.keys(puntosPorCuadrillaMant).forEach(cuadrilla => {
+    let completados = 0;
+    let asignados = puntosPorCuadrillaMant[cuadrilla].length;
+    const completadosList = [];
+
+    puntosPorCuadrillaMant[cuadrilla].forEach(i => {
+      if (i.mantenimiento_completado) {
+        completados++;
+        completadosList.push(getPuntoName(i));
+        if (i.mantenimiento_tipo === 'CORRECTIVO') {
+          correctivosCompletados++;
+        } else {
+          preventivosCompletados++;
+        }
+      }
+      if (i.mantenimiento_observado) {
+        totalObservadosMant++;
+        observadosDetalleMant.push({ 
+          nombre: getPuntoName(i), 
+          cuadrilla: cuadrilla.replace('CUADRILLA-', 'C-'),
+          notas: i.mantenimiento_notas || 'Sin notas'
+        });
+      }
+    });
+
+    totalCompletadosMant += completados;
+    rankingsMant.push({
+      cuadrilla: cuadrilla.replace('CUADRILLA-', 'C-'),
+      completados,
+      asignados,
+      progreso: asignados > 0 ? ((completados / asignados) * 100).toFixed(1) : 0,
+      completadosList
+    });
+  });
+
+  rankingsMant.sort((a,b) => b.completados - a.completados);
+
   return (
     <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
-      <div style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-          <BarChart2 size={24} color="var(--primary)" /> Panel de Métricas
-        </h2>
-        <p style={{ color: 'var(--text-muted)' }}>Vista global de avances por cuadrilla y estado del proyecto.</p>
-      </div>
+      
+      {/* Header con Tabs para alternar entre Instalación y Mantenimiento */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <BarChart2 size={24} color="var(--primary)" /> Panel de Métricas
+          </h2>
+          <p style={{ color: 'var(--text-muted)' }}>Vista de avances de proyectos en campo.</p>
+        </div>
 
-      <div className="kpi-grid admin-kpi-top" style={{ marginBottom: '1rem' }}>
-        <div className="kpi-card" style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))', borderColor: 'rgba(59, 130, 246, 0.3)' }}>
-          <div className="kpi-icon" style={{color: 'var(--primary)'}}><Award size={32}/></div>
-          <div className="kpi-info">
-            <span className="kpi-val" style={{ fontSize: '2rem' }}>{totalCompletados}</span>
-            <span className="kpi-lbl">Puntos Completados Global</span>
-          </div>
-        </div>
-        <div 
-          className="kpi-card" 
-          style={{ background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(185, 28, 28, 0.1))', borderColor: 'rgba(239, 68, 68, 0.3)', cursor: 'pointer' }}
-          onClick={() => setShowObservadosModal(true)}
-          title="Haz clic para ver detalles"
-        >
-          <div className="kpi-icon" style={{color: 'var(--error)'}}><AlertTriangle size={32}/></div>
-          <div className="kpi-info">
-            <span className="kpi-val" style={{ fontSize: '2rem', color: 'var(--error)' }}>{totalObservados}</span>
-            <span className="kpi-lbl">Puntos Observados Global</span>
-          </div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-icon" style={{color: 'var(--text-muted)'}}><MapPin size={32}/></div>
-          <div className="kpi-info">
-            <span className="kpi-val" style={{ fontSize: '2rem' }}>{totalAsignados}</span>
-            <span className="kpi-lbl">Total de Puntos Asignados</span>
-          </div>
-        </div>
-      </div>
-
-      <h3 style={{ marginBottom: '1rem', color: 'var(--text-main)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Equipos Instalados</h3>
-      <div className="kpi-grid admin-kpi-bottom" style={{ marginBottom: '2rem' }}>
-        <div className="kpi-card" style={{ padding: '1rem' }}>
-          <div className="kpi-icon" style={{color: 'var(--c-ptz)'}}><Camera size={20}/></div>
-          <div className="kpi-info">
-            <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{ptzCompletadas}</span>
-            <span className="kpi-lbl">PTZ Instaladas</span>
-          </div>
-        </div>
-        <div className="kpi-card" style={{ padding: '1rem' }}>
-          <div className="kpi-icon" style={{color: 'var(--c-multi)'}}><Video size={20}/></div>
-          <div className="kpi-info">
-            <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{multiCompletadas}</span>
-            <span className="kpi-lbl">Multi Instaladas</span>
-          </div>
-        </div>
-        <div className="kpi-card" style={{ padding: '1rem' }}>
-          <div className="kpi-icon" style={{color: 'var(--c-altavoz)'}}><Volume2 size={20}/></div>
-          <div className="kpi-info">
-            <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{altavocesCompletados}</span>
-            <span className="kpi-lbl">Altavoces IP</span>
-          </div>
-        </div>
-        <div className="kpi-card" style={{ padding: '1rem' }}>
-          <div className="kpi-icon" style={{color: 'var(--c-boton)'}}><ShieldAlert size={20}/></div>
-          <div className="kpi-info">
-            <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{botonesCompletados}</span>
-            <span className="kpi-lbl">Botones Pánico</span>
-          </div>
+        {/* Tab Selector */}
+        <div style={{ display: 'flex', background: 'var(--bg-card)', padding: '0.3rem', borderRadius: '12px', border: '1px solid var(--border-light)', gap: '0.3rem' }}>
+          <button
+            onClick={() => setActiveTab('INSTALACION')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              border: 'none',
+              background: activeTab === 'INSTALACION' ? 'var(--primary)' : 'transparent',
+              color: activeTab === 'INSTALACION' ? '#fff' : 'var(--text-muted)',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Activity size={16} /> Fase Instalación
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('MANTENIMIENTO')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              border: 'none',
+              background: activeTab === 'MANTENIMIENTO' ? 'var(--secondary)' : 'transparent',
+              color: activeTab === 'MANTENIMIENTO' ? '#fff' : 'var(--text-muted)',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Wrench size={16} /> Fase Mantenimiento
+          </button>
         </div>
       </div>
 
-      <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.9rem' }}>Ranking de Cuadrillas</h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {rankings.map((r, i) => (
-          <div key={i} className="ranking-card" style={{ flexDirection: 'column', alignItems: 'stretch', background: 'var(--bg-card)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+      {/* ============================================================
+          VISTA 1: FASE INSTALACIÓN (ORIGINAL COMPLETA)
+      ============================================================ */}
+      {activeTab === 'INSTALACION' && (
+        <>
+          <div className="kpi-grid admin-kpi-top" style={{ marginBottom: '1rem' }}>
+            <div className="kpi-card" style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))', borderColor: 'rgba(59, 130, 246, 0.3)' }}>
+              <div className="kpi-icon" style={{color: 'var(--primary)'}}><Award size={32}/></div>
+              <div className="kpi-info">
+                <span className="kpi-val" style={{ fontSize: '2rem' }}>{totalCompletados}</span>
+                <span className="kpi-lbl">Puntos Instalados Global</span>
+              </div>
+            </div>
             <div 
-              style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', cursor: 'pointer', flexWrap: 'wrap' }}
-              onClick={() => setExpandedCuadrilla(expandedCuadrilla === r.cuadrilla ? null : r.cuadrilla)}
+              className="kpi-card" 
+              style={{ background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(185, 28, 28, 0.1))', borderColor: 'rgba(239, 68, 68, 0.3)', cursor: 'pointer' }}
+              onClick={() => setShowObservadosModal(true)}
+              title="Haz clic para ver detalles"
             >
-              <div className="ranking-position" style={{ color: i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : 'var(--text-muted)', width: '40px', fontSize: '1.5rem', fontWeight: 800 }}>
-                #{i + 1}
+              <div className="kpi-icon" style={{color: 'var(--error)'}}><AlertTriangle size={32}/></div>
+              <div className="kpi-info">
+                <span className="kpi-val" style={{ fontSize: '2rem', color: 'var(--error)' }}>{totalObservados}</span>
+                <span className="kpi-lbl">Puntos Observados Global</span>
               </div>
-              <div style={{ flex: 1, minWidth: '200px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 700, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {r.cuadrilla} 
-                    <ChevronDown size={16} style={{ color: 'var(--text-muted)', transform: expandedCuadrilla === r.cuadrilla ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }} />
-                  </span>
-                  <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{r.completados} / {r.asignados} pts</span>
-                </div>
-                <div style={{ width: '100%', height: '8px', background: 'var(--overlay-w-10)', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${r.progreso}%`, background: 'var(--primary)', transition: 'width 1s ease-out' }}></div>
-                </div>
+            </div>
+            <div className="kpi-card">
+              <div className="kpi-icon" style={{color: 'var(--text-muted)'}}><MapPin size={32}/></div>
+              <div className="kpi-info">
+                <span className="kpi-val" style={{ fontSize: '2rem' }}>{totalAsignados}</span>
+                <span className="kpi-lbl">Total Puntos Asignados</span>
               </div>
-              <div className="ranking-score" style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                {r.progreso}%
+            </div>
+          </div>
+
+          <h3 style={{ marginBottom: '1rem', color: 'var(--text-main)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Equipos Instalados</h3>
+          <div className="kpi-grid admin-kpi-bottom" style={{ marginBottom: '2rem' }}>
+            <div className="kpi-card" style={{ padding: '1rem' }}>
+              <div className="kpi-icon" style={{color: 'var(--c-ptz)'}}><Camera size={20}/></div>
+              <div className="kpi-info">
+                <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{ptzCompletadas}</span>
+                <span className="kpi-lbl">PTZ Instaladas</span>
+              </div>
+            </div>
+            <div className="kpi-card" style={{ padding: '1rem' }}>
+              <div className="kpi-icon" style={{color: 'var(--c-multi)'}}><Video size={20}/></div>
+              <div className="kpi-info">
+                <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{multiCompletadas}</span>
+                <span className="kpi-lbl">Multi Instaladas</span>
+              </div>
+            </div>
+            <div className="kpi-card" style={{ padding: '1rem' }}>
+              <div className="kpi-icon" style={{color: 'var(--c-altavoz)'}}><Volume2 size={20}/></div>
+              <div className="kpi-info">
+                <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{altavocesCompletados}</span>
+                <span className="kpi-lbl">Altavoces IP</span>
+              </div>
+            </div>
+            <div className="kpi-card" style={{ padding: '1rem' }}>
+              <div className="kpi-icon" style={{color: 'var(--c-boton)'}}><ShieldAlert size={20}/></div>
+              <div className="kpi-info">
+                <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{botonesCompletados}</span>
+                <span className="kpi-lbl">Botones Pánico</span>
+              </div>
+            </div>
+          </div>
+
+          <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.9rem' }}>Ranking de Cuadrillas Instaladoras</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {rankings.map((r, i) => (
+              <div key={i} className="ranking-card" style={{ flexDirection: 'column', alignItems: 'stretch', background: 'var(--bg-card)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+                <div 
+                  style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', cursor: 'pointer', flexWrap: 'wrap' }}
+                  onClick={() => setExpandedCuadrilla(expandedCuadrilla === r.cuadrilla ? null : r.cuadrilla)}
+                >
+                  <div className="ranking-position" style={{ color: i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : 'var(--text-muted)', width: '40px', fontSize: '1.5rem', fontWeight: 800 }}>
+                    #{i + 1}
+                  </div>
+                  <div style={{ flex: 1, minWidth: '200px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 700, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {r.cuadrilla} 
+                        <ChevronDown size={16} style={{ color: 'var(--text-muted)', transform: expandedCuadrilla === r.cuadrilla ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }} />
+                      </span>
+                      <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{r.completados} / {r.asignados} pts</span>
+                    </div>
+                    <div style={{ width: '100%', height: '8px', background: 'var(--overlay-w-10)', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${r.progreso}%`, background: 'var(--primary)', transition: 'width 1s ease-out' }}></div>
+                    </div>
+                  </div>
+                  <div className="ranking-score" style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    {r.progreso}%
+                  </div>
+                </div>
+
+                {expandedCuadrilla === r.cuadrilla && (
+                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-light)' }}>
+                    <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Puntos Completados:</h4>
+                    {r.completadosList.length > 0 ? (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        {r.completadosList.map((ptName, pIdx) => (
+                          <span key={pIdx} style={{ background: 'var(--overlay-w-05)', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.85rem', color: 'var(--text-main)', border: '1px solid var(--border-light)' }}>
+                            <CheckSquare size={12} style={{ color: 'var(--c-ptz)', display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />
+                            {ptName}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Ningún punto completado aún.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* ============================================================
+          VISTA 2: FASE MANTENIMIENTO (NUEVA)
+      ============================================================ */}
+      {activeTab === 'MANTENIMIENTO' && (
+        <>
+          <div className="kpi-grid admin-kpi-top" style={{ marginBottom: '1rem' }}>
+            <div className="kpi-card" style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1))', borderColor: 'rgba(99, 102, 241, 0.3)' }}>
+              <div className="kpi-icon" style={{color: 'var(--secondary)'}}><Wrench size={32}/></div>
+              <div className="kpi-info">
+                <span className="kpi-val" style={{ fontSize: '2rem', color: 'var(--secondary)' }}>{totalCompletadosMant}</span>
+                <span className="kpi-lbl">Mantenimientos Realizados</span>
+              </div>
+            </div>
+            
+            <div 
+              className="kpi-card" 
+              style={{ background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(185, 28, 28, 0.1))', borderColor: 'rgba(239, 68, 68, 0.3)', cursor: 'pointer' }}
+              onClick={() => setShowObservadosMantModal(true)}
+              title="Haz clic para ver observaciones de mantenimiento"
+            >
+              <div className="kpi-icon" style={{color: 'var(--error)'}}><AlertTriangle size={32}/></div>
+              <div className="kpi-info">
+                <span className="kpi-val" style={{ fontSize: '2rem', color: 'var(--error)' }}>{totalObservadosMant}</span>
+                <span className="kpi-lbl">Observaciones Mantenimiento</span>
               </div>
             </div>
 
-            {expandedCuadrilla === r.cuadrilla && (
-              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-light)' }}>
-                <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Puntos Completados:</h4>
-                {r.completadosList.length > 0 ? (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {r.completadosList.map((ptName, pIdx) => (
-                      <span key={pIdx} style={{ background: 'var(--overlay-w-05)', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.85rem', color: 'var(--text-main)', border: '1px solid var(--border-light)' }}>
-                        <CheckSquare size={12} style={{ color: 'var(--c-ptz)', display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />
-                        {ptName}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Ningún punto completado aún.</p>
-                )}
+            <div className="kpi-card">
+              <div className="kpi-icon" style={{color: 'var(--text-muted)'}}><MapPin size={32}/></div>
+              <div className="kpi-info">
+                <span className="kpi-val" style={{ fontSize: '2rem' }}>{totalAsignadosMant}</span>
+                <span className="kpi-lbl">Puntos Asignados a Mantenimiento</span>
               </div>
-            )}
+            </div>
           </div>
-        ))}
-      </div>
 
-      {/* Modal Puntos Observados */}
+          {/* Desglose Preventivo vs Correctivo */}
+          <h3 style={{ marginBottom: '1rem', color: 'var(--text-main)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tipo de Mantenimiento Ejecutado</h3>
+          <div className="kpi-grid admin-kpi-bottom" style={{ marginBottom: '2rem' }}>
+            <div className="kpi-card" style={{ padding: '1rem', background: 'rgba(59, 130, 246, 0.05)' }}>
+              <div className="kpi-icon" style={{color: 'var(--primary)'}}><CheckSquare size={20}/></div>
+              <div className="kpi-info">
+                <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{preventivosCompletados}</span>
+                <span className="kpi-lbl">Mantenimiento Preventivo</span>
+              </div>
+            </div>
+            <div className="kpi-card" style={{ padding: '1rem', background: 'rgba(245, 158, 11, 0.05)' }}>
+              <div className="kpi-icon" style={{color: 'var(--c-multi)'}}><Settings size={20}/></div>
+              <div className="kpi-info">
+                <span className="kpi-val" style={{ fontSize: '1.4rem' }}>{correctivosCompletados}</span>
+                <span className="kpi-lbl">Mantenimiento Correctivo</span>
+              </div>
+            </div>
+            <div className="kpi-card" style={{ padding: '1rem' }}>
+              <div className="kpi-icon" style={{color: 'var(--text-muted)'}}><Activity size={20}/></div>
+              <div className="kpi-info">
+                <span className="kpi-val" style={{ fontSize: '1.4rem' }}>
+                  {totalAsignadosMant > 0 ? ((totalCompletadosMant / totalAsignadosMant) * 100).toFixed(1) : 0}%
+                </span>
+                <span className="kpi-lbl">Efectividad Global</span>
+              </div>
+            </div>
+          </div>
+
+          <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.9rem' }}>Ranking de Cuadrillas de Mantenimiento</h3>
+          {rankingsMant.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+              <Wrench size={36} color="var(--text-muted)" style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
+              <p style={{ color: 'var(--text-muted)', margin: 0 }}>Aún no se han asignado puntos a cuadrillas de mantenimiento.</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.5rem' }}>Ve a <b>Cuadrillas</b> o la <b>Vista Operativa</b> para asignar puntos a las nuevas cuadrillas.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {rankingsMant.map((r, i) => (
+                <div key={i} className="ranking-card" style={{ flexDirection: 'column', alignItems: 'stretch', background: 'var(--bg-card)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+                  <div 
+                    style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', cursor: 'pointer', flexWrap: 'wrap' }}
+                    onClick={() => setExpandedCuadrilla(expandedCuadrilla === r.cuadrilla ? null : r.cuadrilla)}
+                  >
+                    <div className="ranking-position" style={{ color: i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : 'var(--text-muted)', width: '40px', fontSize: '1.5rem', fontWeight: 800 }}>
+                      #{i + 1}
+                    </div>
+                    <div style={{ flex: 1, minWidth: '200px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 700, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <Wrench size={16} color="var(--secondary)" /> {r.cuadrilla} 
+                          <ChevronDown size={16} style={{ color: 'var(--text-muted)', transform: expandedCuadrilla === r.cuadrilla ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }} />
+                        </span>
+                        <span style={{ fontWeight: 600, color: 'var(--secondary)' }}>{r.completados} / {r.asignados} mantenimientos</span>
+                      </div>
+                      <div style={{ width: '100%', height: '8px', background: 'var(--overlay-w-10)', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${r.progreso}%`, background: 'var(--secondary)', transition: 'width 1s ease-out' }}></div>
+                      </div>
+                    </div>
+                    <div className="ranking-score" style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                      {r.progreso}%
+                    </div>
+                  </div>
+
+                  {expandedCuadrilla === r.cuadrilla && (
+                    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-light)' }}>
+                      <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Puntos con Mantenimiento Realizado:</h4>
+                      {r.completadosList.length > 0 ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          {r.completadosList.map((ptName, pIdx) => (
+                            <span key={pIdx} style={{ background: 'var(--overlay-w-05)', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.85rem', color: 'var(--text-main)', border: '1px solid var(--border-light)' }}>
+                              <CheckSquare size={12} style={{ color: 'var(--secondary)', display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />
+                              {ptName}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Ningún punto completado aún.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Modal Puntos Observados de Instalación */}
       {showObservadosModal && (
         <div className="splash-overlay" onClick={() => setShowObservadosModal(false)}>
           <div className="splash-container" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', width: '90%', padding: '1.5rem', background: 'var(--bg-main)', borderRadius: '16px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3 style={{ color: 'var(--error)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', margin: 0 }}>
-                <AlertTriangle size={24} /> Detalle de Puntos Observados
+                <AlertTriangle size={24} /> Observaciones de Instalación
               </h3>
               <button onClick={() => setShowObservadosModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
                 <X size={24} />
@@ -205,12 +445,53 @@ export const AdminDashboard = ({ data }) => {
                   ))}
                 </div>
               ) : (
-                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem 0' }}>No hay puntos observados registrados actualmente.</p>
+                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem 0' }}>No hay puntos observados en instalación.</p>
               )}
             </div>
           </div>
         </div>
       )}
+
+      {/* Modal Puntos Observados de Mantenimiento */}
+      {showObservadosMantModal && (
+        <div className="splash-overlay" onClick={() => setShowObservadosMantModal(false)}>
+          <div className="splash-container" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', width: '90%', padding: '1.5rem', background: 'var(--bg-main)', borderRadius: '16px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ color: 'var(--error)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', margin: 0 }}>
+                <AlertTriangle size={24} /> Observaciones de Mantenimiento
+              </h3>
+              <button onClick={() => setShowObservadosMantModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: '0.5rem' }} className="sidebar-scroll">
+              {observadosDetalleMant.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {observadosDetalleMant.map((obs, idx) => (
+                    <div key={idx} style={{ padding: '0.75rem', background: 'var(--bg-sidebar)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{obs.nombre}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--error)', background: 'rgba(239, 68, 68, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '12px', fontWeight: 600 }}>
+                          {obs.cuadrilla}
+                        </span>
+                      </div>
+                      {obs.notas && (
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          <b>Nota:</b> {obs.notas}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem 0' }}>No hay observaciones registradas en mantenimiento.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
