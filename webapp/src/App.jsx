@@ -151,7 +151,7 @@ export default function App() {
   const cuadrillasDisponibles = useMemo(() => {
     if (appMode === 'MANTENIMIENTO') {
       const fromPoints = Object.values(data).map(p => p.cuadrilla_mantenimiento).filter(Boolean);
-      const fromList = (cuadrillasList || []).filter(c => c.tipo === 'MANTENIMIENTO' || !c.tipo).map(c => c.internal_name);
+      const fromList = (cuadrillasList || []).filter(c => c.is_active !== false).map(c => c.internal_name);
       return Array.from(new Set([...fromPoints, ...fromList]));
     }
     return Array.from(new Set(Object.values(data).map(p => p.cuadrilla).filter(Boolean)));

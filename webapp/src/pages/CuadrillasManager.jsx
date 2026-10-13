@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
-import { Users, Edit2, Trash2, CheckSquare, Square, Plus, Save, X, Wrench, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { 
+  Users, Edit2, Trash2, CheckSquare, Square, Plus, Save, X, Wrench, 
+  ArrowRight, CheckCircle2, Search, ShieldCheck, RefreshCw 
+} from 'lucide-react';
+import { getPuntoName } from '../utils/helpers';
 
 export const CuadrillasManager = ({ cuadrillasList, fetchCuadrillas, data = {}, fetchData, sectoresList = [] }) => {
   const [activeTab, setActiveTab] = useState('LISTA'); // 'LISTA' o 'ASIGNAR'
@@ -10,32 +14,48 @@ export const CuadrillasManager = ({ cuadrillasList, fetchCuadrillas, data = {}, 
     company_name: '', 
     leader_name: '', 
     contact_info: '', 
-    tipo: 'INSTALACION',
+    tipo: 'MANTENIMIENTO',
     is_active: true 
   });
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Estados para Asignación Masiva
-  const [asignarMetodo, setAsignarMetodo] = useState('SECTOR'); // 'SECTOR' o 'CUADRILLA_PREVIA'
-  const [selectedOrigen, setSelectedOrigen] = useState('');
+  // Estados para Selección y Asignación de Puntos a Mantenimiento
   const [selectedDestinoCuadrilla, setSelectedDestinoCuadrilla] = useState('');
   const [selectedTipoMantenimiento, setSelectedTipoMantenimiento] = useState('PREVENTIVO');
+  const [searchFilter, setSearchFilter] = useState('');
+  const [sectorFilter, setSectorFilter] = useState('ALL');
+  const [asignacionFilter, setAsignacionFilter] = useState('ALL'); // 'ALL' | 'SIN_MANTENIMIENTO' | 'CON_MANTENIMIENTO'
+  const [selectedPointIds, setSelectedPointIds] = useState(new Set());
   const [isAssigning, setIsAssigning] = useState(false);
   const [assignSuccessMsg, setAssignSuccessMsg] = useState('');
 
-  const puntosList = Object.values(data);
-  const sectoresDisponibles = Array.from(new Set(puntosList.map(p => p.sector).filter(Boolean)));
-  const cuadrillasInstaladoras = Array.from(new Set(puntosList.map(p => p.cuadrilla).filter(Boolean)));
+  const puntosList = useMemo(() => Object.values(data), [data]);
+  const sectoresDisponibles = useMemo(() => {
+    return Array.from(new Set(puntosList.map(p => p.sector).filter(Boolean)));
+  }, [puntosList]);
 
-  // Calcular puntos que coinciden con el origen seleccionado
-  const puntosAfectados = puntosList.filter(p => {
-    if (!selectedOrigen) return false;
-    if (asignarMetodo === 'SECTOR') return p.sector === selectedOrigen;
-    if (asignarMetodo === 'CUADRILLA_PREVIA') return p.cuadrilla === selectedOrigen;
-    return false;
-  });
+  // Puntos filtrados según los controles de búsqueda
+  const filteredPuntos = useMemo(() => {
+    return puntosList.filter(p => {
+      if (sectorFilter !== 'ALL' && p.sector !== sectorFilter) return false;
+      if (asignacionFilter === 'SIN_MANTENIMIENTO' && p.cuadrilla_mantenimiento) return false;
+      if (asignacionFilter === 'CON_MANTENIMIENTO' && !p.cuadrilla_mantenimiento) return false;
+      if (searchFilter.trim()) {
+        const q = searchFilter.toLowerCase();
+        const name = getPuntoName(p).toLowerCase();
+        const dest = (p.destino_esp || '').toLowerCase();
+        const sec = (p.sector || '').toLowerCase();
+        const cuad = (p.cuadrilla || '').toLowerCase();
+        const cuadMant = (p.cuadrilla_mantenimiento || '').toLowerCase();
+        if (!name.includes(q) && !dest.includes(q) && !sec.includes(q) && !cuad.includes(q) && !cuadMant.includes(q)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [puntosList, sectorFilter, asignacionFilter, searchFilter]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -63,7 +83,7 @@ export const CuadrillasManager = ({ cuadrillasList, fetchCuadrillas, data = {}, 
       company_name: c.company_name || '',
       leader_name: c.leader_name || '',
       contact_info: c.contact_info || '',
-      tipo: c.tipo || 'INSTALACION',
+      tipo: c.tipo || 'MANTENIMIENTO',
       is_active: c.is_active !== undefined ? c.is_active : true
     });
     setEditingId(c.id);
@@ -82,19 +102,51 @@ export const CuadrillasManager = ({ cuadrillasList, fetchCuadrillas, data = {}, 
     fetchCuadrillas();
   };
 
-  // Manejador de Asignación Masiva
+  // Alternar rápidamente entre Instalación y Mantenimiento
+  const toggleCuadrillaTipo = async (id, currentTipo) => {
+    const newTipo = currentTipo === 'MANTENIMIENTO' ? 'INSTALACION' : 'MANTENIMIENTO';
+    await supabase.from('cuadrillas').update({ tipo: newTipo }).eq('id', id);
+    fetchCuadrillas();
+  };
+
+  // Acciones de Selección de Puntos
+  const toggleSelectPunto = (id) => {
+    setSelectedPointIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllVisible = () => {
+    setSelectedPointIds(prev => {
+      const next = new Set(prev);
+      filteredPuntos.forEach(p => next.add(p.id));
+      return next;
+    });
+  };
+
+  const deselectAll = () => {
+    setSelectedPointIds(new Set());
+  };
+
+  // Ejecución de Asignación Directa de Puntos Seleccionados
   const handleEjecutarAsignacion = async () => {
-    if (!selectedOrigen || !selectedDestinoCuadrilla) {
-      alert("Por favor selecciona el origen y la cuadrilla de mantenimiento destino.");
+    if (!selectedDestinoCuadrilla) {
+      alert("Por favor selecciona la cuadrilla de mantenimiento destino.");
       return;
     }
 
-    if (puntosAfectados.length === 0) {
-      alert("No se encontraron puntos para los criterios seleccionados.");
+    if (selectedPointIds.size === 0) {
+      alert("Por favor selecciona al menos un punto de la lista.");
       return;
     }
 
-    const confirmMsg = `¿Confirmas asignar ${puntosAfectados.length} puntos a la cuadrilla de mantenimiento "${selectedDestinoCuadrilla}"?`;
+    const targetCuad = cuadrillasList.find(c => c.internal_name === selectedDestinoCuadrilla);
+    const targetName = targetCuad?.display_name || selectedDestinoCuadrilla;
+
+    const confirmMsg = `¿Confirmas asignar ${selectedPointIds.size} punto(s) a la cuadrilla "${targetName}" para Mantenimiento ${selectedTipoMantenimiento}?\n\n(Nota: La cuadrilla de instalación original NO se verá alterada en la base de datos).`;
     if (!window.confirm(confirmMsg)) return;
 
     setIsAssigning(true);
@@ -106,23 +158,21 @@ export const CuadrillasManager = ({ cuadrillasList, fetchCuadrillas, data = {}, 
         mantenimiento_observado: false
       };
 
-      let query = supabase.from('puntos_instalacion').update(updatePayload);
-
-      if (asignarMetodo === 'SECTOR') {
-        query = query.eq('sector', selectedOrigen);
-      } else {
-        query = query.eq('cuadrilla', selectedOrigen);
+      const idsArray = Array.from(selectedPointIds);
+      const chunkSize = 100;
+      for (let i = 0; i < idsArray.length; i += chunkSize) {
+        const chunk = idsArray.slice(i, i + chunkSize);
+        const { error } = await supabase.from('puntos_instalacion').update(updatePayload).in('id', chunk);
+        if (error) throw error;
       }
 
-      const { error } = await query;
-      if (error) throw error;
-
       if (fetchData) await fetchData();
-      setAssignSuccessMsg(`¡Éxito! ${puntosAfectados.length} puntos reasignados a ${selectedDestinoCuadrilla}.`);
-      setTimeout(() => setAssignSuccessMsg(''), 4000);
+      setAssignSuccessMsg(`¡Éxito! ${idsArray.length} punto(s) asignados correctamente a "${targetName}".`);
+      setSelectedPointIds(new Set());
+      setTimeout(() => setAssignSuccessMsg(''), 5000);
     } catch (err) {
-      console.error("Error en asignación masiva:", err);
-      alert("Ocurrió un error al reasignar puntos: " + err.message);
+      console.error("Error al asignar puntos a mantenimiento:", err);
+      alert("Ocurrió un error al asignar los puntos: " + err.message);
     } finally {
       setIsAssigning(false);
     }
@@ -137,7 +187,7 @@ export const CuadrillasManager = ({ cuadrillasList, fetchCuadrillas, data = {}, 
           <h2 style={{ fontSize: '1.5rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
             <Users size={24} color="var(--primary)" /> Gestión y Asignación de Cuadrillas
           </h2>
-          <p style={{ color: 'var(--text-muted)' }}>Crea cuadrillas para Instalación o Mantenimiento y asigna puntos rápidamente.</p>
+          <p style={{ color: 'var(--text-muted)' }}>Crea cuadrillas para Instalación o Mantenimiento y asigna puntos directamente.</p>
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -178,7 +228,7 @@ export const CuadrillasManager = ({ cuadrillasList, fetchCuadrillas, data = {}, 
               style={{ width: 'auto' }}
               onClick={() => { 
                 setEditingId(null); 
-                setFormData({ internal_name: '', display_name: '', company_name: '', leader_name: '', contact_info: '', tipo: 'INSTALACION', is_active: true }); 
+                setFormData({ internal_name: '', display_name: '', company_name: '', leader_name: '', contact_info: '', tipo: 'MANTENIMIENTO', is_active: true }); 
                 setShowForm(!showForm); 
               }}
             >
@@ -200,11 +250,11 @@ export const CuadrillasManager = ({ cuadrillasList, fetchCuadrillas, data = {}, 
               <div className="form-responsive-row">
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Identificador Interno (Obligatorio)</label>
-                  <input type="text" className="splash-input" required value={formData.internal_name} onChange={e => setFormData({...formData, internal_name: e.target.value})} placeholder="Ej. MANT-01 o CUADRILLA-1" disabled={!!editingId} />
+                  <input type="text" className="splash-input" required value={formData.internal_name} onChange={e => setFormData({...formData, internal_name: e.target.value})} placeholder="Ej. PERUVIAN-MANT o CUADRILLA-1" disabled={!!editingId} />
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Nombre a Mostrar</label>
-                  <input type="text" className="splash-input" required value={formData.display_name} onChange={e => setFormData({...formData, display_name: e.target.value})} placeholder="Ej. Cuadrilla Mantenimiento 1" />
+                  <input type="text" className="splash-input" required value={formData.display_name} onChange={e => setFormData({...formData, display_name: e.target.value})} placeholder="Ej. PE o Cuadrilla Mantenimiento 1" />
                 </div>
               </div>
 
@@ -216,13 +266,13 @@ export const CuadrillasManager = ({ cuadrillasList, fetchCuadrillas, data = {}, 
                     value={formData.tipo} 
                     onChange={e => setFormData({...formData, tipo: e.target.value})}
                   >
-                    <option value="INSTALACION">🛠️ Instalación / Obra</option>
                     <option value="MANTENIMIENTO">🔧 Mantenimiento Preventivo/Correctivo</option>
+                    <option value="INSTALACION">🛠️ Instalación / Obra</option>
                   </select>
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Empresa / Contratista</label>
-                  <input type="text" className="splash-input" value={formData.company_name} onChange={e => setFormData({...formData, company_name: e.target.value})} placeholder="Ej. Consorcio ABC" />
+                  <input type="text" className="splash-input" value={formData.company_name} onChange={e => setFormData({...formData, company_name: e.target.value})} placeholder="Ej. PERUVIAN o Consorcio ABC" />
                 </div>
               </div>
 
@@ -250,15 +300,24 @@ export const CuadrillasManager = ({ cuadrillasList, fetchCuadrillas, data = {}, 
                     <h4 style={{ margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <Users size={16} color={isMant ? 'var(--secondary)' : 'var(--primary)'}/> 
                       {c.display_name}
-                      <span style={{ 
-                        fontSize: '0.72rem', 
-                        padding: '2px 8px', 
-                        borderRadius: '12px', 
-                        background: isMant ? 'rgba(99, 102, 241, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-                        color: isMant ? 'var(--secondary)' : 'var(--primary)',
-                        fontWeight: 600
-                      }}>
-                        {isMant ? 'Mantenimiento' : 'Instalación'}
+                      <span 
+                        onClick={() => toggleCuadrillaTipo(c.id, c.tipo)}
+                        style={{ 
+                          fontSize: '0.72rem', 
+                          padding: '3px 9px', 
+                          borderRadius: '12px', 
+                          background: isMant ? 'rgba(99, 102, 241, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                          color: isMant ? 'var(--secondary)' : 'var(--primary)',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          border: isMant ? '1px solid rgba(99, 102, 241, 0.3)' : '1px solid rgba(59, 130, 246, 0.3)'
+                        }}
+                        title="Clic para cambiar entre Mantenimiento e Instalación"
+                      >
+                        {isMant ? '🔧 Mantenimiento' : '🛠️ Instalación'}
                       </span>
                     </h4>
                     <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
@@ -294,79 +353,35 @@ export const CuadrillasManager = ({ cuadrillasList, fetchCuadrillas, data = {}, 
       )}
 
       {/* ============================================================
-          PESTAÑA 2: ASIGNACIÓN RÁPIDA DE PUNTOS A MANTENIMIENTO
+          PESTAÑA 2: SELECCIÓN Y ASIGNACIÓN DIRECTA DE PUNTOS
       ============================================================ */}
       {activeTab === 'ASIGNAR' && (
-        <div style={{ background: 'var(--bg-card)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-light)', maxWidth: '800px', margin: '0 auto' }}>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--secondary)', marginBottom: '0.5rem' }}>
-            <Wrench size={22} /> Reasignar Puntos a Cuadrillas de Mantenimiento
-          </h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-            Selecciona un Sector completo o una Cuadrilla previa de instalación para asignarle todos sus puntos a una nueva cuadrilla de mantenimiento en un solo clic.
-          </p>
+        <div style={{ maxWidth: '980px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          
+          {/* Banner informativo de seguridad de datos */}
+          <div style={{ padding: '0.9rem 1.2rem', background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '10px', display: 'flex', alignItems: 'flex-start', gap: '0.8rem' }}>
+            <ShieldCheck size={22} color="var(--primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div style={{ fontSize: '0.85rem', lineHeight: '1.45', color: 'var(--text-main)' }}>
+              <strong>Independencia de Roles:</strong> Asignar puntos a una cuadrilla de mantenimiento <strong>NO altera ni sobreescribe</strong> la cuadrilla que realizó la instalación original. El instalador original queda registrado permanentemente en el campo <code>cuadrilla</code>, y aquí solo se asigna el responsable en <code>cuadrilla_mantenimiento</code>.
+            </div>
+          </div>
 
           {assignSuccessMsg && (
-            <div style={{ padding: '0.8rem 1rem', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid var(--success)', borderRadius: '8px', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+            <div style={{ padding: '0.8rem 1rem', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid var(--success)', borderRadius: '8px', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <CheckCircle2 size={18} /> {assignSuccessMsg}
             </div>
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-            
-            {/* Método de Selección */}
-            <div>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '0.4rem' }}>
-                1. ¿Cómo deseas seleccionar los puntos a reasignar?
-              </label>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.9rem' }}>
-                  <input 
-                    type="radio" 
-                    name="metodo" 
-                    value="SECTOR" 
-                    checked={asignarMetodo === 'SECTOR'} 
-                    onChange={() => { setAsignarMetodo('SECTOR'); setSelectedOrigen(''); }} 
-                  />
-                  Por Sector / Zona
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.9rem' }}>
-                  <input 
-                    type="radio" 
-                    name="metodo" 
-                    value="CUADRILLA_PREVIA" 
-                    checked={asignarMetodo === 'CUADRILLA_PREVIA'} 
-                    onChange={() => { setAsignarMetodo('CUADRILLA_PREVIA'); setSelectedOrigen(''); }} 
-                  />
-                  Por Cuadrilla de Instalación Original
-                </label>
-              </div>
-            </div>
+          {/* Panel de Configuración de Destino */}
+          <div style={{ background: 'var(--bg-card)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+            <h3 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.1rem', color: 'var(--secondary)' }}>
+              <Wrench size={20} /> 1. Configurar Destino de Mantenimiento
+            </h3>
 
-            {/* Selector de Origen */}
-            <div>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '0.4rem' }}>
-                2. Selecciona el {asignarMetodo === 'SECTOR' ? 'Sector de Origen' : 'Cuadrilla Instaladora Original'}
-              </label>
-              <select 
-                className="splash-input"
-                value={selectedOrigen}
-                onChange={e => setSelectedOrigen(e.target.value)}
-                style={{ width: '100%' }}
-              >
-                <option value="">-- Elige una opción --</option>
-                {asignarMetodo === 'SECTOR' ? (
-                  sectoresDisponibles.map(s => <option key={s} value={s}>{s}</option>)
-                ) : (
-                  cuadrillasInstaladoras.map(c => <option key={c} value={c}>{c}</option>)
-                )}
-              </select>
-            </div>
-
-            {/* Selector de Destino */}
-            <div className="form-responsive-row">
-              <div style={{ flex: 1 }}>
+            <div className="form-responsive-row" style={{ gap: '1rem', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1.3 }}>
                 <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '0.4rem' }}>
-                  3. Nueva Cuadrilla de Mantenimiento Destino
+                  Cuadrilla de Mantenimiento Destino:
                 </label>
                 <select 
                   className="splash-input"
@@ -377,7 +392,7 @@ export const CuadrillasManager = ({ cuadrillasList, fetchCuadrillas, data = {}, 
                   <option value="">-- Selecciona Cuadrilla de Mantenimiento --</option>
                   {cuadrillasList.map(c => (
                     <option key={c.id || c.internal_name} value={c.internal_name}>
-                      {c.display_name || c.internal_name} {c.tipo === 'MANTENIMIENTO' ? '(Mantenimiento)' : ''}
+                      {c.display_name || c.internal_name} {c.company_name ? `(${c.company_name})` : ''} - {c.tipo === 'MANTENIMIENTO' ? '🔧 Mantenimiento' : '🛠️ Instalación'}
                     </option>
                   ))}
                 </select>
@@ -385,7 +400,7 @@ export const CuadrillasManager = ({ cuadrillasList, fetchCuadrillas, data = {}, 
 
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '0.4rem' }}>
-                  4. Tipo de Mantenimiento Inicial
+                  Tipo de Mantenimiento:
                 </label>
                 <select 
                   className="splash-input"
@@ -397,38 +412,230 @@ export const CuadrillasManager = ({ cuadrillasList, fetchCuadrillas, data = {}, 
                   <option value="CORRECTIVO">Mantenimiento Correctivo</option>
                 </select>
               </div>
-            </div>
 
-            {/* Resumen y Botón de Ejecutar */}
-            <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                <div>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Puntos a reasignar:</span>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 700, color: puntosAfectados.length > 0 ? 'var(--secondary)' : 'var(--text-muted)' }}>
-                    {puntosAfectados.length} puntos
-                  </div>
-                </div>
-
+              <div>
                 <button
+                  type="button"
                   onClick={handleEjecutarAsignacion}
-                  disabled={isAssigning || puntosAfectados.length === 0 || !selectedDestinoCuadrilla}
+                  disabled={isAssigning || selectedPointIds.size === 0 || !selectedDestinoCuadrilla}
                   className="splash-btn primary"
                   style={{ 
-                    background: puntosAfectados.length > 0 && selectedDestinoCuadrilla ? 'var(--secondary)' : undefined, 
-                    width: 'auto',
+                    background: selectedPointIds.size > 0 && selectedDestinoCuadrilla ? 'var(--secondary)' : undefined, 
                     minWidth: '220px',
+                    height: '42px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '0.5rem'
+                    gap: '0.5rem',
+                    fontWeight: 600
                   }}
                 >
-                  <ArrowRight size={18} /> {isAssigning ? 'Reasignando...' : 'Asignar Puntos Ahora'}
+                  <Wrench size={18} /> {isAssigning ? 'Asignando...' : `Asignar ${selectedPointIds.size} Puntos`}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Panel de Selección Directa de Puntos */}
+          <div style={{ background: 'var(--bg-card)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>2. Seleccionar Puntos en Cuestión</h3>
+                <span style={{ fontSize: '0.8rem', background: 'var(--bg-main)', padding: '3px 10px', borderRadius: '10px', color: selectedPointIds.size > 0 ? 'var(--secondary)' : 'var(--text-muted)', border: '1px solid var(--border-light)', fontWeight: 600 }}>
+                  {selectedPointIds.size} seleccionados de {filteredPuntos.length} filtrados (Total: {puntosList.length})
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={selectAllVisible}
+                  className="splash-btn secondary"
+                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', width: 'auto' }}
+                >
+                  Seleccionar visibles ({filteredPuntos.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={deselectAll}
+                  className="splash-btn secondary"
+                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', width: 'auto' }}
+                  disabled={selectedPointIds.size === 0}
+                >
+                  Limpiar selección
                 </button>
               </div>
             </div>
 
+            {/* Chips de puntos seleccionados actualmente */}
+            {selectedPointIds.size > 0 && (
+              <div style={{ 
+                padding: '0.8rem 1rem', 
+                background: 'var(--bg-main)', 
+                borderRadius: '8px', 
+                border: '1px solid var(--border-light)', 
+                marginBottom: '1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5rem'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--secondary)' }}>
+                    Puntos específicos elegidos para asignar ({selectedPointIds.size}):
+                  </span>
+                  <button 
+                    type="button" 
+                    onClick={deselectAll}
+                    style={{ background: 'none', border: 'none', color: 'var(--error)', fontSize: '0.75rem', cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    Quitar todos
+                  </button>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', maxHeight: '130px', overflowY: 'auto' }}>
+                  {Array.from(selectedPointIds).map(id => {
+                    const p = data[id] || puntosList.find(item => item.id === id);
+                    if (!p) return null;
+                    const name = getPuntoName(p);
+                    return (
+                      <span 
+                        key={id} 
+                        style={{ 
+                          display: 'inline-flex', 
+                          alignItems: 'center', 
+                          gap: '0.35rem', 
+                          padding: '4px 9px', 
+                          background: 'rgba(99, 102, 241, 0.15)', 
+                          color: 'var(--secondary)', 
+                          borderRadius: '6px', 
+                          fontSize: '0.75rem', 
+                          fontWeight: 600,
+                          border: '1px solid rgba(99, 102, 241, 0.3)'
+                        }}
+                      >
+                        📍 {name} {p.sector ? `(${p.sector})` : ''}
+                        <X 
+                          size={13} 
+                          style={{ cursor: 'pointer', marginLeft: '3px' }} 
+                          onClick={(e) => { e.stopPropagation(); toggleSelectPunto(id); }} 
+                          title="Quitar este punto de la selección"
+                        />
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Filtros de búsqueda */}
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+              <div style={{ flex: '1 1 240px', position: 'relative' }}>
+                <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input
+                  type="text"
+                  className="splash-input"
+                  placeholder="Buscar por código de punto, nombre, dirección..."
+                  value={searchFilter}
+                  onChange={e => setSearchFilter(e.target.value)}
+                  style={{ paddingLeft: '2.2rem', width: '100%' }}
+                />
+              </div>
+
+              <div style={{ flex: '0 1 180px' }}>
+                <select
+                  className="splash-input"
+                  value={sectorFilter}
+                  onChange={e => setSectorFilter(e.target.value)}
+                  style={{ width: '100%' }}
+                >
+                  <option value="ALL">Todos los Sectores</option>
+                  {sectoresDisponibles.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+
+              <div style={{ flex: '0 1 220px' }}>
+                <select
+                  className="splash-input"
+                  value={asignacionFilter}
+                  onChange={e => setAsignacionFilter(e.target.value)}
+                  style={{ width: '100%' }}
+                >
+                  <option value="ALL">Cualquier Estado de Mant.</option>
+                  <option value="SIN_MANTENIMIENTO">Sin Cuadrilla de Mantenimiento</option>
+                  <option value="CON_MANTENIMIENTO">Con Mantenimiento Asignado</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Lista scrollable de puntos interactiva */}
+            <div style={{ maxHeight: '440px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingRight: '4px' }}>
+              {filteredPuntos.map(p => {
+                const isSelected = selectedPointIds.has(p.id);
+                const puntoName = getPuntoName(p);
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => toggleSelectPunto(p.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.8rem',
+                      padding: '0.65rem 0.9rem',
+                      borderRadius: '8px',
+                      background: isSelected ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-main)',
+                      border: isSelected ? '1px solid var(--secondary)' : '1px solid var(--border-light)',
+                      cursor: 'pointer',
+                      transition: 'background 0.15s, border-color 0.15s'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      {isSelected ? <CheckSquare size={20} color="var(--secondary)" /> : <Square size={20} color="var(--text-muted)" />}
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: isSelected ? 'var(--secondary)' : 'var(--text-main)' }}>
+                          {puntoName}
+                        </span>
+                        {p.sector && (
+                          <span style={{ fontSize: '0.72rem', background: 'var(--bg-card)', padding: '1px 6px', borderRadius: '4px', border: '1px solid var(--border-light)', color: 'var(--text-muted)' }}>
+                            {p.sector}
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {p.destino_esp || 'Sin dirección específica'}
+                      </p>
+                    </div>
+
+                    {/* Badges de Cuadrillas: Instalación vs Mantenimiento */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem', flexShrink: 0 }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--primary)', background: 'rgba(59, 130, 246, 0.12)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                        🛠️ Instaló: {p.cuadrilla || 'N/A'}
+                      </span>
+                      <span style={{ 
+                        fontSize: '0.72rem', 
+                        color: p.cuadrilla_mantenimiento ? 'var(--secondary)' : 'var(--text-muted)', 
+                        background: p.cuadrilla_mantenimiento ? 'rgba(99, 102, 241, 0.12)' : 'transparent',
+                        padding: '2px 6px', 
+                        borderRadius: '4px', 
+                        fontWeight: 600 
+                      }}>
+                        🔧 Mant: {p.cuadrilla_mantenimiento || 'Sin asignar'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {filteredPuntos.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                  No se encontraron puntos con los filtros aplicados.
+                </div>
+              )}
+            </div>
+
           </div>
+
         </div>
       )}
 
