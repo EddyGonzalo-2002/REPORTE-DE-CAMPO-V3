@@ -147,6 +147,22 @@ export default function App() {
     fetchData();
   };
 
+  // Cuadrillas disponibles según modo
+  const cuadrillasDisponibles = useMemo(() => {
+    if (appMode === 'MANTENIMIENTO') {
+      const fromPoints = Object.values(data).map(p => p.cuadrilla_mantenimiento).filter(Boolean);
+      const fromList = (cuadrillasList || []).filter(c => c.tipo === 'MANTENIMIENTO' || !c.tipo).map(c => c.internal_name);
+      return Array.from(new Set([...fromPoints, ...fromList]));
+    }
+    return Array.from(new Set(Object.values(data).map(p => p.cuadrilla).filter(Boolean)));
+  }, [appMode, data, cuadrillasList]);
+
+  useEffect(() => {
+    if (cuadrillasDisponibles.length > 0 && !cuadrillasDisponibles.includes(activeCuadrilla)) {
+      setActiveCuadrilla(cuadrillasDisponibles[0]);
+    }
+  }, [appMode, cuadrillasDisponibles, activeCuadrilla]);
+
   const getHeaderTitle = () => {
     switch(location.pathname) {
       case '/operativo': return 'Vista Operativa';
@@ -168,22 +184,6 @@ export default function App() {
   if (location.pathname === '/') {
     return session ? <Navigate to="/admin/dashboard" replace /> : <SplashScreen onGuest={() => navigate('/operativo')} session={session} />;
   }
-
-  // Cuadrillas disponibles según modo
-  const cuadrillasDisponibles = useMemo(() => {
-    if (appMode === 'MANTENIMIENTO') {
-      const fromPoints = Object.values(data).map(p => p.cuadrilla_mantenimiento).filter(Boolean);
-      const fromList = (cuadrillasList || []).filter(c => c.tipo === 'MANTENIMIENTO' || !c.tipo).map(c => c.internal_name);
-      return Array.from(new Set([...fromPoints, ...fromList]));
-    }
-    return Array.from(new Set(Object.values(data).map(p => p.cuadrilla).filter(Boolean)));
-  }, [appMode, data, cuadrillasList]);
-
-  useEffect(() => {
-    if (cuadrillasDisponibles.length > 0 && !cuadrillasDisponibles.includes(activeCuadrilla)) {
-      setActiveCuadrilla(cuadrillasDisponibles[0]);
-    }
-  }, [appMode, cuadrillasDisponibles, activeCuadrilla]);
 
   return (
     <div className="app-layout">
