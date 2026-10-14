@@ -531,17 +531,7 @@ export const AdminMapDashboard = ({ data, onUpdatePunto, fetchData, cuadrillasMa
               key={loc.id} 
               position={[loc.lat, loc.lng]} 
               icon={markerIcon}
-              draggable={true}
-              eventHandlers={{
-                dragend: (e) => {
-                  const marker = e.target;
-                  const position = marker.getLatLng();
-                  onUpdatePunto(loc.id, {
-                    latitud: position.lat.toString().replace('.', ','),
-                    longitud: position.lng.toString().replace('.', ',')
-                  });
-                }
-              }}
+              draggable={false}
             >
               <Popup maxWidth={300} minWidth={220} className="custom-popup">
                 <LocationCard 
