@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon } from 'react-leaflet';
 import L from 'leaflet';
 import { point, featureCollection, convex, clustersKmeans, buffer, lineString } from '@turf/turf';
-import { Eye, EyeOff, Activity, BrainCircuit, Search, ChevronDown } from 'lucide-react';
+import { Eye, EyeOff, Activity, BrainCircuit, Search, ChevronDown, Wrench } from 'lucide-react';
 import { LocationCard } from '../components/LocationCard';
 import { getPuntoName } from '../utils/helpers';
 import { SectorGlobalLogistics } from '../components/SectorGlobalLogistics';
@@ -68,6 +68,11 @@ export const AdminMapDashboard = ({ data, onUpdatePunto, fetchData, cuadrillasMa
   const [clusterConfigType, setClusterConfigType] = useState('pts_per_cluster');
   const [numClusters, setNumClusters] = useState(5);
   const [ptsPerCluster, setPtsPerCluster] = useState(10);
+  
+  // Filtros de Mantenimiento
+  const [maintenanceFilter, setMaintenanceFilter] = useState('ALL'); // 'ALL' | 'CON_MANTENIMIENTO' | 'SIN_MANTENIMIENTO'
+  const [selectedCuadrillaMantFilter, setSelectedCuadrillaMantFilter] = useState('ALL');
+  const [showMantDropdown, setShowMantDropdown] = useState(false);
   let debugPolygonsGenerated = 0;
 
   const puntosList = useMemo(() => {
@@ -80,18 +85,44 @@ export const AdminMapDashboard = ({ data, onUpdatePunto, fetchData, cuadrillasMa
     }).filter(p => p.isGeolocated);
   }, [data]);
 
+  const cuadrillasConMantenimiento = useMemo(() => {
+    const counts = {};
+    puntosList.forEach(p => {
+      if (p.cuadrilla_mantenimiento) {
+        counts[p.cuadrilla_mantenimiento] = (counts[p.cuadrilla_mantenimiento] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [puntosList]);
+
+  const totalConMantenimiento = useMemo(() => {
+    return puntosList.filter(p => !!p.cuadrilla_mantenimiento).length;
+  }, [puntosList]);
+
+  const totalSinMantenimiento = puntosList.length - totalConMantenimiento;
+
   const filteredPuntos = useMemo(() => {
     return puntosList.filter(loc => {
       if (selectedSectorFilter !== 'ALL' && loc.sector !== selectedSectorFilter) return false;
+      
+      // Filtro de Mantenimiento
+      if (maintenanceFilter === 'CON_MANTENIMIENTO') {
+        if (!loc.cuadrilla_mantenimiento) return false;
+        if (selectedCuadrillaMantFilter !== 'ALL' && loc.cuadrilla_mantenimiento !== selectedCuadrillaMantFilter) return false;
+      } else if (maintenanceFilter === 'SIN_MANTENIMIENTO') {
+        if (loc.cuadrilla_mantenimiento) return false;
+      }
+
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase();
         const puntoName = getPuntoName(loc).toLowerCase();
         const destino = (loc.destino_esp || '').toLowerCase();
-        if (!puntoName.includes(q) && !destino.includes(q)) return false;
+        const mant = (loc.cuadrilla_mantenimiento || '').toLowerCase();
+        if (!puntoName.includes(q) && !destino.includes(q) && !mant.includes(q)) return false;
       }
       return true;
     });
-  }, [puntosList, selectedSectorFilter, searchQuery]);
+  }, [puntosList, selectedSectorFilter, maintenanceFilter, selectedCuadrillaMantFilter, searchQuery]);
 
   const renderPolygons = () => {
     debugPolygonsGenerated = 0;
@@ -215,23 +246,158 @@ export const AdminMapDashboard = ({ data, onUpdatePunto, fetchData, cuadrillasMa
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      <div style={{ position: 'absolute', top: 15, left: 50, zIndex: 1000, display: 'flex', alignItems: 'center', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-light)', padding: '0.4rem 0.8rem', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
-        <Search size={18} style={{ color: 'var(--text-muted)', marginRight: '0.5rem' }} />
-        <input 
-          type="text" 
-          placeholder="Buscar punto o nombre..." 
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '0.9rem', width: '220px' }}
-        />
+      <div style={{ position: 'absolute', top: 15, left: 50, zIndex: 1000, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-light)', padding: '0.4rem 0.8rem', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+          <Search size={18} style={{ color: 'var(--text-muted)', marginRight: '0.5rem' }} />
+          <input 
+            type="text" 
+            placeholder="Buscar punto, destino..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '0.9rem', width: '180px' }}
+          />
+        </div>
+
+        <div style={{ 
+          background: 'var(--bg-main)', 
+          borderRadius: '12px', 
+          border: '1px solid var(--border-light)', 
+          padding: '0.48rem 0.8rem', 
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)', 
+          fontSize: '0.8rem', 
+          fontWeight: 600, 
+          color: 'var(--text-muted)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.4rem'
+        }}>
+          <span>{filteredPuntos.length} pts</span>
+          {maintenanceFilter === 'CON_MANTENIMIENTO' && (
+            <span style={{ color: 'var(--secondary)', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+              • <Wrench size={12} /> Mantenimiento
+            </span>
+          )}
+        </div>
       </div>
 
-      <div style={{ position: 'absolute', top: 15, right: 15, zIndex: 1000, display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 'calc(100% - 320px)' }}>
+      <div style={{ position: 'absolute', top: 15, right: 15, zIndex: 1000, display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 'calc(100% - 350px)' }}>
         
+        {/* Dropdown de Subcategoría de Mantenimiento */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => { setShowMantDropdown(!showMantDropdown); setShowSectorDropdown(false); }}
+            style={{
+              padding: '0.6rem 1rem', 
+              background: maintenanceFilter === 'CON_MANTENIMIENTO' ? 'rgba(139, 92, 246, 0.15)' : 'var(--bg-main)', 
+              color: maintenanceFilter === 'CON_MANTENIMIENTO' ? 'var(--secondary)' : 'var(--text-main)',
+              border: `1px solid ${maintenanceFilter === 'CON_MANTENIMIENTO' ? 'var(--secondary)' : 'var(--border-light)'}`, 
+              borderRadius: '12px', 
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)', 
+              fontWeight: 600, 
+              fontSize: '0.9rem',
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem', 
+              minWidth: '175px', 
+              justifyContent: 'space-between'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Wrench size={16} color={maintenanceFilter === 'CON_MANTENIMIENTO' ? 'var(--secondary)' : 'var(--text-muted)'} />
+              <span>
+                {maintenanceFilter === 'ALL' && `Mantenimiento: Todos`}
+                {maintenanceFilter === 'SIN_MANTENIMIENTO' && `Sin Mant. (${totalSinMantenimiento})`}
+                {maintenanceFilter === 'CON_MANTENIMIENTO' && (
+                  selectedCuadrillaMantFilter === 'ALL' 
+                    ? `En Mant. (${totalConMantenimiento})`
+                    : `Mant: ${cuadrillasMap[selectedCuadrillaMantFilter]?.display_name || selectedCuadrillaMantFilter}`
+                )}
+              </span>
+            </div>
+            <ChevronDown size={16} />
+          </button>
+          
+          {showMantDropdown && (
+            <div style={{
+              position: 'absolute', top: 'calc(100% + 5px)', right: 0, minWidth: '250px',
+              background: 'var(--bg-main)', border: '1px solid var(--border-light)', borderRadius: '12px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 1001, display: 'flex', flexDirection: 'column'
+            }}>
+              <div 
+                onClick={() => { setMaintenanceFilter('ALL'); setSelectedCuadrillaMantFilter('ALL'); setShowMantDropdown(false); }}
+                style={{ 
+                  padding: '0.65rem 1rem', cursor: 'pointer', color: 'var(--text-main)', 
+                  fontWeight: maintenanceFilter === 'ALL' ? 700 : 500, 
+                  background: maintenanceFilter === 'ALL' ? 'var(--bg-card)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                }}
+              >
+                <span>🌐 Todos los Puntos</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{puntosList.length}</span>
+              </div>
+
+              <div 
+                onClick={() => { setMaintenanceFilter('CON_MANTENIMIENTO'); setSelectedCuadrillaMantFilter('ALL'); setShowMantDropdown(false); }}
+                style={{ 
+                  padding: '0.65rem 1rem', cursor: 'pointer', color: 'var(--secondary)', 
+                  fontWeight: (maintenanceFilter === 'CON_MANTENIMIENTO' && selectedCuadrillaMantFilter === 'ALL') ? 700 : 500, 
+                  background: (maintenanceFilter === 'CON_MANTENIMIENTO' && selectedCuadrillaMantFilter === 'ALL') ? 'var(--bg-card)' : 'transparent',
+                  borderTop: '1px solid var(--border-light)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Wrench size={14} /> Solo en Mantenimiento
+                </span>
+                <span style={{ fontSize: '0.75rem', background: 'rgba(139, 92, 246, 0.2)', padding: '1px 6px', borderRadius: '8px', color: 'var(--secondary)', fontWeight: 700 }}>
+                  {totalConMantenimiento}
+                </span>
+              </div>
+
+              {/* Subcategorías por cada Cuadrilla de Mantenimiento activa */}
+              {Object.entries(cuadrillasConMantenimiento).map(([cuadName, count]) => (
+                <div 
+                  key={cuadName}
+                  onClick={() => { setMaintenanceFilter('CON_MANTENIMIENTO'); setSelectedCuadrillaMantFilter(cuadName); setShowMantDropdown(false); }}
+                  style={{ 
+                    padding: '0.55rem 1rem 0.55rem 1.8rem', cursor: 'pointer',
+                    color: (maintenanceFilter === 'CON_MANTENIMIENTO' && selectedCuadrillaMantFilter === cuadName) ? 'var(--secondary)' : 'var(--text-main)',
+                    fontWeight: (maintenanceFilter === 'CON_MANTENIMIENTO' && selectedCuadrillaMantFilter === cuadName) ? 700 : 400,
+                    fontSize: '0.82rem',
+                    background: (maintenanceFilter === 'CON_MANTENIMIENTO' && selectedCuadrillaMantFilter === cuadName) ? 'var(--bg-card)' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    borderTop: '1px dashed var(--border-light)'
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    ↳ <strong>{cuadrillasMap[cuadName]?.display_name || cuadName}</strong>
+                  </span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{count} pts</span>
+                </div>
+              ))}
+
+              <div 
+                onClick={() => { setMaintenanceFilter('SIN_MANTENIMIENTO'); setSelectedCuadrillaMantFilter('ALL'); setShowMantDropdown(false); }}
+                style={{ 
+                  padding: '0.65rem 1rem', cursor: 'pointer', color: 'var(--primary)', 
+                  fontWeight: maintenanceFilter === 'SIN_MANTENIMIENTO' ? 700 : 500, 
+                  background: maintenanceFilter === 'SIN_MANTENIMIENTO' ? 'var(--bg-card)' : 'transparent',
+                  borderTop: '1px solid var(--border-light)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                }}
+              >
+                <span>🛠️ Sin Mantenimiento Asignado</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{totalSinMantenimiento}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Custom Sector Dropdown */}
         <div style={{ position: 'relative' }}>
           <button
-            onClick={() => setShowSectorDropdown(!showSectorDropdown)}
+            onClick={() => { setShowSectorDropdown(!showSectorDropdown); setShowMantDropdown(false); }}
             style={{
               padding: '0.6rem 1rem', background: 'var(--bg-main)', color: 'var(--text-main)',
               border: '1px solid var(--border-light)', borderRadius: '12px', cursor: 'pointer',
@@ -345,17 +511,19 @@ export const AdminMapDashboard = ({ data, onUpdatePunto, fetchData, cuadrillasMa
              // Actually, mapping point to cluster ID is hard here, so we stick to sector color or default.
              // Let's just use sector color always.
           }
-          const sColor = sectoresMap[loc.sector]?.color || '#3b82f6';
+          const isMant = !!loc.cuadrilla_mantenimiento;
+          const sColor = isMant ? '#8b5cf6' : (sectoresMap[loc.sector]?.color || '#3b82f6');
           
           const markerIcon = L.divIcon({
             className: 'custom-marker',
-            html: `<svg width="24" height="36" viewBox="0 0 24 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 0C5.37258 0 0 5.37258 0 12C0 21 12 36 12 36C12 36 24 21 24 12C24 5.37258 18.6274 0 12 0Z" fill="${sColor}"/>
-              <circle cx="12" cy="12" r="5" fill="white"/>
+            html: `<svg width="26" height="38" viewBox="0 0 24 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 0C5.37258 0 0 5.37258 0 12C0 21 12 36 12 36C12 36 24 21 24 12C24 5.37258 18.6274 0 12 0Z" fill="${sColor}" ${isMant ? 'stroke="#ffffff" stroke-width="1.5"' : ''}/>
+              <circle cx="12" cy="12" r="${isMant ? '6' : '5'}" fill="white"/>
+              ${isMant ? '<circle cx="12" cy="12" r="3.2" fill="#8b5cf6"/>' : ''}
             </svg>`,
-            iconSize: [24, 36],
-            iconAnchor: [12, 36],
-            popupAnchor: [0, -36],
+            iconSize: [26, 38],
+            iconAnchor: [13, 38],
+            popupAnchor: [0, -38],
           });
 
           return (
